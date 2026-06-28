@@ -59,7 +59,7 @@ jobs:
       - name: Build matrix from sonar-projects.json
         id: set
         run: |
-          matrix=$(jq -c '{include: [to_entries[] | {name: .key, path: .value.path, projectKey: .value.projectKey}]}' .github/sonar-projects.json)
+          matrix=$(jq -c '{include: [to_entries[] | {name: .key, path: .value.path, projectKey: .value.projectKey, coverageExclusions: (.value.coverageExclusions // "")}]}' .github/sonar-projects.json)
           echo "matrix: $matrix"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
@@ -94,7 +94,7 @@ jobs:
         run: pnpm --filter ${{ matrix.name }} run test:coverage
 
       - name: SonarCloud scan (${{ matrix.projectKey }})
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
@@ -107,6 +107,7 @@ jobs:
             -Dsonar.tests=src
             -Dsonar.test.inclusions=**/*.test.ts
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=${{ matrix.coverageExclusions }}
             -Dsonar.qualitygate.wait=true
 
   # Single required check for branch protection. Mark only "CI Gate" as required

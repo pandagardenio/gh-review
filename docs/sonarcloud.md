@@ -70,6 +70,19 @@ which fails the gate.
 Apps with no tests yet (`@triage/extension`, `@triage/web`) are analyzed without coverage
 until they gain tests — the scan still runs.
 
+### Coverage exclusions (thin entry shells)
+
+The "Sonar way" gate fails new code with < 80% coverage. The per-target **entry shells**
+(`apps/extension/src/content.ts`, `apps/web/src/main.ts`) are bootstrap glue that's
+exercised through the packages they import (see `.claude/rules/testing.md`), so they're
+excluded from the *coverage* requirement — but still analyzed for bugs/smells/security.
+
+Each `.github/sonar-projects.json` entry carries an optional `coverageExclusions` (a
+comma-separated, project-relative glob list) passed to `-Dsonar.coverage.exclusions`. Leave
+it `""` for packages whose code should be fully covered (`engine`, `ui`). When an app grows
+real, testable logic beyond its entry shell, write tests for it rather than widening the
+exclusion.
+
 ## Adding a package later
 
 Add an entry to `.github/sonar-projects.json`, create the matching SonarCloud project, and
