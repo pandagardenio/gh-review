@@ -5,7 +5,16 @@
  * UI module or a browser-extension API. The engine is pure logic + contracts.
  */
 
+export type { ApiPullRequestFile } from './diff/api-files.js';
+export { mapApiFiles } from './diff/api-files.js';
+export type { PullRequestLocator, PullRequestRef } from './diff/coordinates.js';
+export { parsePullRequestUrl } from './diff/coordinates.js';
+export type { DiffLoadReason } from './diff/errors.js';
+export { DiffLoadError } from './diff/errors.js';
+export type { LoadDiffOptions } from './diff/loader.js';
+export { loadPullRequestDiff } from './diff/loader.js';
 export type { DiffFile, FileChangeKind, PullRequestDiff } from './diff/model.js';
+export { parseUnifiedDiff } from './diff/unified-diff.js';
 export { ENGINE_VERSION, engineSmoke } from './smoke.js';
 export type { TokenStore } from './token-store.js';
 export { InMemoryTokenStore } from './token-store.js';
