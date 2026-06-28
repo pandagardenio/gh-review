@@ -1,0 +1,15 @@
+# Run tests only for packages affected by the changes being pushed.
+# turbo's `...[ref]` filter selects packages changed since <ref> plus everything
+# that depends on them. Pick the best available base ref: prefer the upstream
+# main, fall back to a local main, and finally to the previous commit so the hook
+# still works before any remote/main exists.
+if git rev-parse --verify origin/main >/dev/null 2>&1; then
+  base="origin/main"
+elif git rev-parse --verify main >/dev/null 2>&1; then
+  base="main"
+else
+  base="HEAD^"
+fi
+
+echo "pre-push: running tests affected since $base"
+pnpm exec turbo run test --filter="...[$base]"
