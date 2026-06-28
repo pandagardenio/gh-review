@@ -22,6 +22,8 @@
       "Bash(pnpm exec lint-staged)",
       "Bash(pnpm --filter * build)",
       "Bash(pnpm --filter * test)",
+      "Bash(pnpm --filter * typecheck)",
+      "Bash(pnpm --filter * lint)",
       "Bash(pnpm --version)",
       "Bash(node --version)",
       "Bash(find:*)",
