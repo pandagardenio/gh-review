@@ -1,0 +1,33 @@
+{
+  "name": "@triage/ui",
+  "version": "0.0.0",
+  "description": "CSP-safe DOM construction helpers for injected Triage UI (createElement + CSSOM + addEventListener).",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@triage/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0"
+  }
+}

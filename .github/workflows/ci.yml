@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, typecheck, test & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint & format check (Biome)
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  # One independent SonarCloud project per workspace package. The matrix is the
+  # single source of truth in .github/sonar-projects.json (name → path → projectKey),
+  # also read by the /pr skill. Gated on the SONAR_ORGANIZATION repo variable, so
+  # Sonar stays dormant (and CI green) until it's configured — see docs/sonarcloud.md.
+  sonar-matrix:
+    name: Compute Sonar matrix
+    runs-on: ubuntu-latest
+    needs: verify
+    if: ${{ vars.SONAR_ORGANIZATION != '' }}
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build matrix from sonar-projects.json
+        id: set
+        run: |
+          matrix=$(jq -c '{include: [to_entries[] | {name: .key, path: .value.path, projectKey: .value.projectKey, coverageExclusions: (.value.coverageExclusions // "")}]}' .github/sonar-projects.json)
+          echo "matrix: $matrix"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  sonar:
+    name: SonarCloud (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: sonar-matrix
+    if: ${{ vars.SONAR_ORGANIZATION != '' }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.sonar-matrix.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Sonar needs full history for new-code / blame
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Coverage for ${{ matrix.name }}
+        run: pnpm --filter ${{ matrix.name }} run test:coverage
+
+      - name: SonarCloud scan (${{ matrix.projectKey }})
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          projectBaseDir: ${{ matrix.path }}
+          args: >-
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ matrix.projectKey }}
+            -Dsonar.sources=src
+            -Dsonar.tests=src
+            -Dsonar.test.inclusions=**/*.test.ts
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=${{ matrix.coverageExclusions }}
+            -Dsonar.qualitygate.wait=true
+
+  # Single required check for branch protection. Mark only "CI Gate" as required
+  # in the ruleset instead of each underlying job — adding/removing a job (or a
+  # Sonar project) then never means editing the ruleset. `if: always()` runs the
+  # gate even when an upstream job fails or is skipped; it then inspects results.
+  #
+  # `verify` must succeed outright. `sonar-matrix`/`sonar` are legitimately
+  # skipped until SONAR_ORGANIZATION is set (and `sonar` is also skipped when its
+  # matrix yields nothing), so `skipped` is allowed for them — but `failure` is not.
+  gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [verify, sonar-matrix, sonar]
+    steps:
+      - name: Verify required jobs passed
+        run: |
+          set -euo pipefail
+          echo "verify:       ${{ needs.verify.result }}"
+          echo "sonar-matrix: ${{ needs.sonar-matrix.result }}"
+          echo "sonar:        ${{ needs.sonar.result }}"
+
+          fail=0
+          if [ "${{ needs.verify.result }}" != "success" ]; then
+            echo "::error::verify must succeed (got '${{ needs.verify.result }}')"; fail=1
+          fi
+          for r in "${{ needs.sonar-matrix.result }}" "${{ needs.sonar.result }}"; do
+            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
+              echo "::error::a conditional job did not pass (got '$r')"; fail=1
+            fi
+          done
+
+          if [ "$fail" -ne 0 ]; then
+            echo "CI Gate failed — one or more required jobs did not pass."
+            exit 1
+          fi
+          echo "CI Gate passed — all required jobs succeeded or were legitimately skipped."
+        shell: bash

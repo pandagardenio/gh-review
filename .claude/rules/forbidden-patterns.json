@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "file-size",
+      "type": "line-cap",
+      "pathRegex": ".*/(packages|apps)/[^/]+/src/.*\\.ts$",
+      "pathExclude": ".*\\.(test|spec)\\.ts$",
+      "maxLines": 300,
+      "message": "File exceeds 300 LOC. Split by responsibility (rule: file-size)."
+    },
+    {
+      "id": "engine-isolation",
+      "type": "content-forbidden",
+      "pathRegex": ".*/packages/engine/src/.*\\.ts$",
+      "regex": "from\\s+['\"](@triage/(ui|extension|web)|.*\\.css)['\"]",
+      "message": "The engine is provider- and UI-agnostic: it must not import UI or app code. Dependencies flow apps → ui → engine only (rule: engine-isolation). Browser globals are already rejected by the engine's tsconfig (no DOM/chrome libs). See CLAUDE.md."
+    },
+    {
+      "id": "csp-no-html-injection",
+      "type": "content-forbidden",
+      "pathRegex": ".*/(packages/ui|apps)/.*\\.ts$",
+      "pathExclude": ".*\\.(test|spec)\\.ts$",
+      "regex": "\\.(innerHTML|outerHTML)\\s*=|\\.insertAdjacentHTML\\s*\\(",
+      "message": "github.com CSP forbids injecting HTML strings. Build the CSP-safe way: createElement + textContent (use @triage/ui el()) (rule: csp-safe-dom). See CLAUDE.md hard constraints."
+    },
+    {
+      "id": "csp-no-inline-style-attr",
+      "type": "content-forbidden",
+      "pathRegex": ".*/(packages/ui|apps)/.*\\.ts$",
+      "pathExclude": ".*\\.(test|spec)\\.ts$",
+      "regex": "setAttribute\\(\\s*['\"]style['\"]",
+      "message": "CSP forbids inline style attributes. Set styles via CSSOM: element.style.<prop> = ... (rule: csp-safe-dom)."
+    },
+    {
+      "id": "csp-no-inline-handler-attr",
+      "type": "content-forbidden",
+      "pathRegex": ".*/(packages/ui|apps)/.*\\.ts$",
+      "pathExclude": ".*\\.(test|spec)\\.ts$",
+      "regex": "setAttribute\\(\\s*['\"]on[a-z]+['\"]",
+      "message": "CSP forbids inline event-handler attributes. Use addEventListener instead (rule: csp-safe-dom)."
+    }
+  ]
+}

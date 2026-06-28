@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["chrome"]
+  },
+  "include": ["src", "vite.config.ts"],
+  "exclude": ["dist", "node_modules"],
+  "references": [{ "path": "../../packages/engine" }, { "path": "../../packages/ui" }]
+}

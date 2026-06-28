@@ -18,18 +18,72 @@ accountable) need an explicit written justification if strained.
 ## Current state
 
 - The product docs above exist and are authoritative.
+- **BL-001 scaffolding is in place** (see [`README.md`](./README.md)): a pnpm + Turborepo
+  monorepo with `packages/engine`, `packages/ui`, `apps/extension`, `apps/web`; Vite +
+  Vitest + Biome; Husky hooks; GitHub Actions CI. The engine/ui/entry-shell split is the
+  realized structure — keep to it.
 - A **working bookmarklet prototype** exists as the behavioural reference for **M1**
   (categorized triage panel: `.diff`→API loading, path categorization, `package.json`
   dependency expansion, jump-to-file via native anchors). Treat it as the spec for M1
   output, not as code to preserve verbatim.
 - Everything else (M2–M5 in MVP.md) is unbuilt.
 
-## Your call: scaffolding
+## Repository layout & toolchain
 
-You own the project structure, build tooling, and conventions. Pick what fits; just keep
-the **core review engine provider-agnostic and UI-agnostic** so the same code runs from
-both the bookmarklet and the extension. A reasonable split is engine (parsing, loading,
-categorization, diff model) / UI / thin per-target entry shells — but decide for yourself.
+Monorepo, dependencies flowing **one way: apps → ui → engine**. Full detail in
+[`README.md`](./README.md).
+
+```
+packages/engine/   @triage/engine — provider- & UI-agnostic core (diff model, loading,
+                   categorization, TokenStore contract). Runs from bookmarklet AND extension.
+packages/ui/       @triage/ui — CSP-safe DOM helpers (createElement + CSSOM + addEventListener).
+apps/extension/    @triage/extension — Chrome MV3 entry shell (bundles engine + ui).
+apps/web/          @triage/web — web app placeholder (built later).
+```
+
+The **engine must stay provider- and UI-agnostic**: no imports of `@triage/ui` or app
+code, no browser-extension APIs, no DOM. This is enforced two ways — the `engine-isolation`
+forbidden-pattern rule (import ban) and the engine's `tsconfig` omitting the DOM/`chrome`
+libs, so the compiler rejects any browser global.
+
+## Working in this repo
+
+All commands go through `pnpm` (Turborepo orchestrates per package):
+
+```bash
+pnpm build        # build every package/app (engine emits .d.ts)
+pnpm test         # all Vitest suites
+pnpm typecheck    # tsc --noEmit per package
+pnpm lint         # biome check (lint + format)
+pnpm lint:fix     # biome check --write
+pnpm dev          # watch builds
+```
+
+- **Branching.** Never commit to `main` (`validate-commit.sh` blocks it). Cut a fresh
+  `<type>/<slug>` branch from `main` before editing (`require-fresh-branch.sh` enforces it
+  on the first edit). `<type>` ∈ {feat, fix, chore, refactor, test, docs}.
+- **Commits + PR.** Conventional + emoji: `type: <emoji> description` (emoji from the
+  gitignored `CLAUDE.local.md`; ask if absent). Always use the `gh` CLI; open PRs with the
+  `/pr` skill, which watches CI and runs the self-review loop. Full rules:
+  [`.claude/rules/git.md`](./.claude/rules/git.md).
+- **Testing.** Vitest — `node` env for the engine, `jsdom` for the UI. Co-located
+  `<name>.test.ts`, exercise the contract not the implementation. Full rules:
+  [`.claude/rules/testing.md`](./.claude/rules/testing.md).
+- **Session close.** On stop, `session-close.sh` runs lint + typecheck + affected tests and
+  prompts for a PR. It **blocks** on failure (set `TRIAGE_SOFT=1` to downgrade to a warning,
+  `TRIAGE_SKIP_CLOSE=1` to skip).
+
+## Hard protections (hook-enforced)
+
+Hooks block hard-rule violations at the point of action — **never work around a hook**;
+read the message and fix the violation.
+
+- Direct commits on `main`/`master` and `--no-verify` are blocked.
+- Forbidden patterns ([`.claude/rules/forbidden-patterns.json`](./.claude/rules/forbidden-patterns.json))
+  are blocked at Edit/Write time with the rule ID + fix. Current rules enforce the
+  CSP-safe-DOM and engine-isolation constraints below, plus a 300-LOC file cap.
+
+To change an enforced rule, edit `forbidden-patterns.json` — one file, cited by rule ID.
 
 ## Hard constraints (validated against live GitHub — do not relitigate)
 

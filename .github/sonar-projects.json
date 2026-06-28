@@ -1,0 +1,22 @@
+{
+  "@triage/engine": {
+    "path": "packages/engine",
+    "projectKey": "pandagardenio_gh-review--engine",
+    "coverageExclusions": ""
+  },
+  "@triage/ui": {
+    "path": "packages/ui",
+    "projectKey": "pandagardenio_gh-review--ui",
+    "coverageExclusions": ""
+  },
+  "@triage/extension": {
+    "path": "apps/extension",
+    "projectKey": "pandagardenio_gh-review--extension",
+    "coverageExclusions": "src/content.ts"
+  },
+  "@triage/web": {
+    "path": "apps/web",
+    "projectKey": "pandagardenio_gh-review--web",
+    "coverageExclusions": "src/main.ts"
+  }
+}
