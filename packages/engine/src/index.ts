@@ -5,6 +5,9 @@
  * UI module or a browser-extension API. The engine is pure logic + contracts.
  */
 
+export { categorize } from './categorize/categorize.js';
+export type { CategoryId, CategoryRule, FileCategory } from './categorize/model.js';
+export { CATEGORY_RULES } from './categorize/rules.js';
 export type { ApiPullRequestFile } from './diff/api-files.js';
 export { mapApiFiles } from './diff/api-files.js';
 export type { PullRequestLocator, PullRequestRef } from './diff/coordinates.js';
