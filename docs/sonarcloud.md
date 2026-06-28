@@ -26,14 +26,14 @@ what you create):
 
 | Package | Path | Project key |
 | --- | --- | --- |
-| `@triage/engine` | `packages/engine` | `triage-engine` |
-| `@triage/ui` | `packages/ui` | `triage-ui` |
-| `@triage/extension` | `apps/extension` | `triage-extension` |
-| `@triage/web` | `apps/web` | `triage-web` |
+| `@triage/engine` | `packages/engine` | `pandagardenio_gh-review--engine` |
+| `@triage/ui` | `packages/ui` | `pandagardenio_gh-review--ui` |
+| `@triage/extension` | `apps/extension` | `pandagardenio_gh-review--extension` |
+| `@triage/web` | `apps/web` | `pandagardenio_gh-review--web` |
 
-> SonarCloud project keys are globally unique and often prefixed with the org
-> (`pandagardenio_triage-engine`). Use whatever the UI gives you — the JSON file is the source of
-> truth the CI matrix and `/pr` read.
+> SonarCloud project keys are globally unique and prefixed with the org. These four are
+> already created. The JSON file is the source of truth the CI matrix and `/pr` read — keep
+> it in sync with whatever exists in SonarCloud.
 
 ### 3. Turn off Automatic Analysis
 

@@ -1,18 +1,18 @@
 {
   "@triage/engine": {
     "path": "packages/engine",
-    "projectKey": "triage-engine"
+    "projectKey": "pandagardenio_gh-review--engine"
   },
   "@triage/ui": {
     "path": "packages/ui",
-    "projectKey": "triage-ui"
+    "projectKey": "pandagardenio_gh-review--ui"
   },
   "@triage/extension": {
     "path": "apps/extension",
-    "projectKey": "triage-extension"
+    "projectKey": "pandagardenio_gh-review--extension"
   },
   "@triage/web": {
     "path": "apps/web",
-    "projectKey": "triage-web"
+    "projectKey": "pandagardenio_gh-review--web"
   }
 }
