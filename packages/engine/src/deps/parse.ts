@@ -76,7 +76,7 @@ export function parseDependencyChanges(patch: string): DependencyChange[] {
     const newMap = after.get(kind) ?? new Map<string, string>();
     const names = new Set([...oldMap.keys(), ...newMap.keys()]);
 
-    for (const name of [...names].sort()) {
+    for (const name of [...names].sort((a, b) => a.localeCompare(b))) {
       const previousVersion = oldMap.get(name);
       const version = newMap.get(name);
       if (previousVersion === undefined && version !== undefined) {
