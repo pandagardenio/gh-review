@@ -17,6 +17,16 @@ export interface DiffFile {
   /** Prior path (the `a/` side) when the file was renamed; otherwise undefined. */
   readonly previousPath?: string;
   readonly change: FileChangeKind;
+  /** Added line count (`+` lines), summed across hunks. */
+  readonly additions: number;
+  /** Removed line count (`-` lines), summed across hunks. */
+  readonly deletions: number;
+  /**
+   * Binary or otherwise patch-less file (large, or a git binary patch). Such a
+   * file is represented, never dropped (BL-002 acceptance); {@link patch} is
+   * absent and downstream renders a "no inline diff" affordance (BL-006).
+   */
+  readonly isBinary: boolean;
   /** Raw unified-diff patch for this file, when available. */
   readonly patch?: string;
 }
