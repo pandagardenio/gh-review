@@ -1,0 +1,18 @@
+{
+  "@triage/engine": {
+    "path": "packages/engine",
+    "projectKey": "triage-engine"
+  },
+  "@triage/ui": {
+    "path": "packages/ui",
+    "projectKey": "triage-ui"
+  },
+  "@triage/extension": {
+    "path": "apps/extension",
+    "projectKey": "triage-extension"
+  },
+  "@triage/web": {
+    "path": "apps/web",
+    "projectKey": "triage-web"
+  }
+}

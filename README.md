@@ -33,7 +33,8 @@ and no browser-extension API (enforced as BL-001 acceptance).
 | Lint + format | **Biome** (`biome.json`) |
 | Types | **TypeScript** project references, per-package `tsconfig` |
 | Git hooks | **Husky** + **lint-staged** |
-| Coverage | **Vitest v8** coverage (lcov per package) |
+| Coverage + quality | **Vitest v8** coverage → **SonarCloud**, one project per package ([docs/sonarcloud.md](./docs/sonarcloud.md)) |
+| Agent harness | `.claude/` hooks + rules (CSP/engine-isolation guards), `/pr` skill ([CLAUDE.md](./CLAUDE.md)) |
 
 ## Commands
 
