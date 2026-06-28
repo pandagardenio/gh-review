@@ -54,6 +54,13 @@ importers:
       '@triage/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@triage/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
 
   packages/engine: {}
 
