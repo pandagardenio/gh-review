@@ -40,6 +40,14 @@ export type { LoadDiffOptions } from './diff/loader.js';
 export { loadPullRequestDiff } from './diff/loader.js';
 export type { DiffFile, FileChangeKind, PullRequestDiff } from './diff/model.js';
 export { parseUnifiedDiff } from './diff/unified-diff.js';
+export type { CommentAnchor, CommentDraft, CommentSide, DraftComment } from './review/comments.js';
+export {
+  commentsForPath,
+  createCommentDraft,
+  getComment,
+  removeComment,
+  setComment,
+} from './review/comments.js';
 export type { ReviewProgress, ReviewState, SectionProgress } from './review/state.js';
 export {
   createReviewState,

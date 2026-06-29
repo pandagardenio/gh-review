@@ -5,6 +5,8 @@
  * flows UI → engine, never the reverse.
  */
 export { diffAnchorHref, diffAnchorId } from './anchor.js';
+export type { CommentableDiff, CommentableDiffOptions } from './commentable-diff.js';
+export { createCommentableDiff } from './commentable-diff.js';
 export { dependencyRows } from './dependency-rows.js';
 export { lazyFileDiff, renderFileDiff } from './diff-view.js';
 export type { ElementOptions } from './dom.js';
