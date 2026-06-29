@@ -17,19 +17,6 @@
 
 import type { CategoryId } from '../categorize/model.js';
 
-/**
- * What to do with the "no review-required files" case. Deliberately a small,
- * extensible set — the user picks the team's risk appetite (this grows in
- * complexity over time):
- *
- * - `auto`     — approve whenever nothing review-required changed.
- * - `never`    — never auto-approve; always leave it to a human.
- * - `threshold`— approve only when nothing review-required changed *and* the PR
- *                stays at or under {@link ThresholdPolicy.maxFiles} total files
- *                (bounds a large code-only diff from sailing through).
- */
-export type AutoReviewMode = 'auto' | 'never' | 'threshold';
-
 export interface AutoPolicy {
   readonly mode: 'auto';
 }
@@ -44,7 +31,17 @@ export interface ThresholdPolicy {
   readonly maxFiles: number;
 }
 
-/** The configured auto-approval policy. A discriminated union, built to grow. */
+/**
+ * The configured auto-approval policy — what to do with the "no review-required
+ * files" case. A discriminated union, deliberately small and built to grow; the
+ * user picks the team's risk appetite:
+ *
+ * - `auto`     — approve whenever nothing review-required changed.
+ * - `never`    — never auto-approve; always leave it to a human.
+ * - `threshold`— approve only when nothing review-required changed *and* the PR
+ *                stays at or under {@link ThresholdPolicy.maxFiles} total files
+ *                (bounds a large code-only diff from sailing through).
+ */
 export type AutoApprovalPolicy = AutoPolicy | NeverPolicy | ThresholdPolicy;
 
 /** Either the bot approves, or it defers to a human. It never requests changes. */

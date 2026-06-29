@@ -8,7 +8,6 @@
 export type {
   AutoApprovalPolicy,
   AutoReviewDecision,
-  AutoReviewMode,
   AutoReviewOutcome,
 } from './autoreview/model.js';
 export {
