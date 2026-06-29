@@ -30,3 +30,6 @@ coverage/
 CLAUDE.local.md
 .claude/session/
 
+# Agent memory lives outside the repo (under ~/.claude); never track a stray in-repo copy
+memory/
+
