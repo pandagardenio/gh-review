@@ -50,6 +50,8 @@ export {
   setFileViewed,
 } from './review/state.js';
 export { ENGINE_VERSION, engineSmoke } from './smoke.js';
+export type { ImplementationTarget } from './testcases/implementation.js';
+export { implementationTarget, resolveImplementationPath } from './testcases/implementation.js';
 export type { TestCase, TestCaseKind, TestCaseStatus } from './testcases/parse.js';
 export { parseTestCases } from './testcases/parse.js';
 export type { TokenStore } from './token-store.js';

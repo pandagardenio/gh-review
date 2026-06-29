@@ -6,10 +6,14 @@
  * case is parsed (principle 5).
  */
 
-import type { DiffFile, TestCase } from '@triage/engine';
+import type { DiffFile, PullRequestDiff, TestCase } from '@triage/engine';
 import { parseTestCases } from '@triage/engine';
 import { renderFileDiff } from './diff-view.js';
 import { el } from './dom.js';
+import {
+  createImplementationFocus,
+  type ImplementationFocusOptions,
+} from './implementation-focus.js';
 
 const STATUS_LABEL: Record<TestCase['status'], string> = {
   added: 'added',
@@ -17,12 +21,23 @@ const STATUS_LABEL: Record<TestCase['status'], string> = {
   changed: 'changed',
 };
 
+export interface TestFileViewOptions extends ImplementationFocusOptions {
+  /** When given, prepend the implementation-focus jump (BL-009). */
+  diff?: PullRequestDiff;
+}
+
 /** Render the case list (if any) plus the test file's diff, wired for scroll. */
-export async function createTestFileView(file: DiffFile): Promise<HTMLElement> {
+export async function createTestFileView(
+  file: DiffFile,
+  options: TestFileViewOptions = {},
+): Promise<HTMLElement> {
   const diff = await renderFileDiff(file);
   const cases = parseTestCases(file.patch ?? '');
 
   const children: HTMLElement[] = [];
+  if (options.diff) {
+    children.push(createImplementationFocus(file.path, options.diff, options));
+  }
   if (cases.length > 0) children.push(renderCaseList(cases, diff));
   children.push(diff);
 
