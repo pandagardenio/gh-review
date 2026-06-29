@@ -1,0 +1,402 @@
+/* Control Room — a compact, dark cockpit aesthetic. Self-contained; no CDN. */
+
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --panel-2: #1c2330;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --ok: #2ea043;
+  --warn: #d29922;
+  --danger: #f85149;
+  --info: #58a6ff;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    14px / 1.5 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+.cr-app {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+.cr-app--loading,
+.cr-app--error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.cr-center {
+  color: var(--muted);
+}
+
+/* Header */
+.cr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cr-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.cr-brand__mark {
+  color: var(--info);
+  font-size: 22px;
+}
+
+.cr-header__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cr-source {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+/* Tabs */
+.cr-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 18px 0 22px;
+}
+
+.cr-tab {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.cr-tab--active {
+  background: var(--panel-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.cr-tab--idle:hover {
+  color: var(--text);
+}
+
+/* Cards */
+.cr-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.cr-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.cr-card__value {
+  font-size: 26px;
+  font-weight: 650;
+}
+
+.cr-card__label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+.cr-card__sub {
+  color: var(--info);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Sections */
+.cr-section {
+  margin-top: 28px;
+}
+
+.cr-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.cr-section__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.cr-empty {
+  color: var(--muted);
+}
+
+/* Pipeline */
+.cr-pipeline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cr-stage {
+  flex: 1 1 90px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.cr-stage--empty {
+  opacity: 0.45;
+}
+
+.cr-stage--escalated {
+  border-color: var(--danger);
+}
+
+.cr-stage__count {
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.cr-stage__name {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: capitalize;
+  margin-top: 2px;
+}
+
+/* Station rows */
+.cr-stations,
+.cr-failures,
+.cr-gates,
+.cr-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cr-srow {
+  display: grid;
+  grid-template-columns: 96px 70px 1fr 48px auto;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+}
+
+.cr-srow__name {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.cr-srow__runs,
+.cr-srow__lat {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Bars */
+.cr-bar {
+  height: 8px;
+  background: var(--panel-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cr-bar__fill {
+  height: 100%;
+}
+
+.cr-bar__fill--ok {
+  background: var(--ok);
+}
+
+.cr-bar__fill--warn {
+  background: var(--warn);
+}
+
+.cr-bar__fill--danger {
+  background: var(--danger);
+}
+
+/* Failure rows */
+.cr-frow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+}
+
+.cr-frow__reason {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.cr-frow__where {
+  color: var(--muted);
+  font-size: 12px;
+  margin-left: auto;
+}
+
+/* Review */
+.cr-note {
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.cr-review {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.cr-review__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cr-review__num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+}
+
+.cr-review__paths {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--warn);
+}
+
+.cr-review__title {
+  margin: 8px 0 10px;
+  font-weight: 500;
+}
+
+.cr-review__cta {
+  color: var(--info);
+  text-decoration: none;
+}
+
+.cr-review__cta--missing {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Config */
+.cr-gate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+}
+
+.cr-gate__pat {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.cr-gate__kind {
+  color: var(--muted);
+  font-size: 12px;
+  margin-left: auto;
+  text-transform: uppercase;
+}
+
+.cr-raw {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Badges + links */
+.cr-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cr-badge--ok {
+  background: rgba(46, 160, 67, 0.18);
+  color: var(--ok);
+}
+
+.cr-badge--warn {
+  background: rgba(210, 153, 34, 0.18);
+  color: var(--warn);
+}
+
+.cr-badge--danger {
+  background: rgba(248, 81, 73, 0.18);
+  color: var(--danger);
+}
+
+.cr-badge--info {
+  background: rgba(88, 166, 255, 0.18);
+  color: var(--info);
+}
+
+.cr-badge--muted {
+  background: var(--panel-2);
+  color: var(--muted);
+}
+
+.cr-link {
+  color: var(--info);
+  text-decoration: none;
+}
+
+.cr-link--right {
+  margin-left: auto;
+}

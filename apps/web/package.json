@@ -1,7 +1,7 @@
 {
   "name": "@triage/web",
   "version": "0.0.0",
-  "description": "Triage web app — placeholder; built later (see MVP.md).",
+  "description": "Coding-factory Control Room — web cockpit (Observe / Configure / Review) over a dark-factory repo.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,6 +14,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@triage/engine": "workspace:*"
+    "@triage/engine": "workspace:*",
+    "@triage/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0"
   }
 }
