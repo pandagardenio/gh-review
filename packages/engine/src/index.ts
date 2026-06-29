@@ -26,6 +26,15 @@ export type { LoadDiffOptions } from './diff/loader.js';
 export { loadPullRequestDiff } from './diff/loader.js';
 export type { DiffFile, FileChangeKind, PullRequestDiff } from './diff/model.js';
 export { parseUnifiedDiff } from './diff/unified-diff.js';
+export type { ReviewProgress, ReviewState, SectionProgress } from './review/state.js';
+export {
+  createReviewState,
+  isFileViewed,
+  overallProgress,
+  sectionProgress,
+  setFilesViewed,
+  setFileViewed,
+} from './review/state.js';
 export { ENGINE_VERSION, engineSmoke } from './smoke.js';
 export type { TokenStore } from './token-store.js';
 export { InMemoryTokenStore } from './token-store.js';

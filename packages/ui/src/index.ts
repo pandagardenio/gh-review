@@ -11,3 +11,5 @@ export type { ElementOptions } from './dom.js';
 export { el } from './dom.js';
 export type { TriagePanelOptions } from './panel.js';
 export { createTriagePanel } from './panel.js';
+export type { ReviewFlow, ReviewFlowOptions } from './review-flow.js';
+export { createReviewFlow } from './review-flow.js';
