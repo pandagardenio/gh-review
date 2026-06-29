@@ -4,5 +4,9 @@
  * The engine (`@triage/engine`) must never import from here; the dependency only
  * flows UI → engine, never the reverse.
  */
+export { diffAnchorHref, diffAnchorId } from './anchor.js';
+export { dependencyRows } from './dependency-rows.js';
 export type { ElementOptions } from './dom.js';
 export { el } from './dom.js';
+export type { TriagePanelOptions } from './panel.js';
+export { createTriagePanel } from './panel.js';
