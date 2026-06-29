@@ -13,3 +13,4 @@ export type { TriagePanelOptions } from './panel.js';
 export { createTriagePanel } from './panel.js';
 export type { ReviewFlow, ReviewFlowOptions } from './review-flow.js';
 export { createReviewFlow } from './review-flow.js';
+export { createTestFileView } from './test-file-view.js';
