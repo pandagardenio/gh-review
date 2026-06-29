@@ -1,0 +1,49 @@
+name: 'Triage Autoreview'
+description: >-
+  Auto-approve pull requests that change nothing review-required (the null case);
+  defer everything intent/risk-bearing to a human. Opt-in CI surface — see
+  CONSTITUTION.md for the principle-4 carve-out.
+author: 'Triage'
+
+inputs:
+  token:
+    description: 'GitHub token with `pull-requests: write`. Defaults to the workflow token.'
+    required: false
+    default: ${{ github.token }}
+  mode:
+    description: 'auto | never | threshold. When set, overrides the config file.'
+    required: false
+    default: ''
+  max-files:
+    description: 'For mode: threshold — max total changed files that can still auto-approve.'
+    required: false
+    default: ''
+  config-file:
+    description: 'Path to a JSON policy file (e.g. {"mode":"threshold","maxFiles":10}).'
+    required: false
+    default: '.github/triage-autoreview.json'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      shell: bash
+    - name: Build engine + action
+      run: pnpm --filter @triage/engine --filter @triage/action build
+      shell: bash
+    - name: Run autoreview
+      run: node "$GITHUB_ACTION_PATH/dist/main.js"
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        TRIAGE_MODE: ${{ inputs.mode }}
+        TRIAGE_MAX_FILES: ${{ inputs.max-files }}
+        TRIAGE_CONFIG_FILE: ${{ inputs.config-file }}

@@ -7,7 +7,7 @@
  * implicit catch-all at the bottom and matches everything else.
  */
 
-import type { CategoryRule } from './model.js';
+import type { CategoryId, CategoryRule } from './model.js';
 
 const base = (path: string): string => path.slice(path.lastIndexOf('/') + 1);
 
@@ -149,13 +149,32 @@ const isDocs = (path: string): boolean => {
   );
 };
 
-/** The ordered rule array. `code` (catch-all) is appended last and always matches. */
+/**
+ * The ordered rule array. `code` (catch-all) is appended last and always matches.
+ *
+ * `reviewRequired` marks the intent/risk-bearing categories the Constitution
+ * (principle 1) says a human must look at — dependencies, harness, CI, config,
+ * tests. `docs` and `code` are the low-risk leaf categories; a PR touching only
+ * those is the auto-approve null case (BL-016).
+ */
 export const CATEGORY_RULES: readonly CategoryRule[] = [
-  { id: 'dependencies', label: 'Dependencies', match: isManifest },
-  { id: 'harness', label: 'Harness', match: isHarness },
-  { id: 'ci', label: 'CI', match: isCi },
-  { id: 'config', label: 'Config', match: isConfig },
-  { id: 'tests', label: 'Tests', match: isTest },
-  { id: 'docs', label: 'Docs', match: isDocs },
-  { id: 'code', label: 'Code', match: () => true },
+  { id: 'dependencies', label: 'Dependencies', match: isManifest, reviewRequired: true },
+  { id: 'harness', label: 'Harness', match: isHarness, reviewRequired: true },
+  { id: 'ci', label: 'CI', match: isCi, reviewRequired: true },
+  { id: 'config', label: 'Config', match: isConfig, reviewRequired: true },
+  { id: 'tests', label: 'Tests', match: isTest, reviewRequired: true },
+  { id: 'docs', label: 'Docs', match: isDocs, reviewRequired: false },
+  { id: 'code', label: 'Code', match: () => true, reviewRequired: false },
 ];
+
+/** Category ids whose changes require a human reviewer (derived from the rules). */
+export const REVIEW_REQUIRED_CATEGORIES: readonly CategoryId[] = CATEGORY_RULES.filter(
+  (rule) => rule.reviewRequired,
+).map((rule) => rule.id);
+
+const REVIEW_REQUIRED_SET = new Set<CategoryId>(REVIEW_REQUIRED_CATEGORIES);
+
+/** Whether a category carries the intent/risk a human must review (BL-016). */
+export function isReviewRequiredCategory(id: CategoryId): boolean {
+  return REVIEW_REQUIRED_SET.has(id);
+}

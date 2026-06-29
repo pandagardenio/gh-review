@@ -36,6 +36,16 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/node@22.20.0)(jsdom@25.0.1)(yaml@2.9.0)
 
+  apps/action:
+    dependencies:
+      '@triage/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.0
+
   apps/extension:
     dependencies:
       '@triage/engine':
