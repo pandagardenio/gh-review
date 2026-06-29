@@ -66,4 +66,20 @@ describe('createTestFileView', () => {
     expect(view.querySelector('.triage-cases')).toBeNull();
     expect(view.querySelector('.triage-diff__row')).not.toBeNull();
   });
+
+  it('prepends the implementation-focus jump when a diff is given (BL-009)', async () => {
+    const f = testFile();
+    const view = await createTestFileView(f, {
+      diff: {
+        owner: 'octo',
+        repo: 'repo',
+        number: 1,
+        headSha: 'sha',
+        files: [f],
+      },
+    });
+    // The impl sibling (src/math.ts) is not in the PR → external link.
+    const link = view.querySelector('.triage-impl--external .triage-impl__link');
+    expect(link?.getAttribute('href')).toBe('https://github.com/octo/repo/blob/sha/src/math.ts');
+  });
 });
