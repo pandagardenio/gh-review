@@ -264,3 +264,46 @@ checked against live GitHub.
    materialize as a single GitHub review.
 5. **M5 — Extension:** MV3 packaging, isolated-world load, `chrome.storage` token, manifest
    update channel.
+
+---
+
+## 9. Autoreview action (BL-016) — opt-in CI surface
+
+A GitHub Action that triages a PR in CI and **auto-approves the null case** — a PR
+whose changes touch nothing review-required — while deferring anything intent/risk-
+bearing to a human. This is a **separate, opt-in surface, not the browser plugin**;
+the plugin still never approves. It deliberately strains Constitution principle 4
+and the "not a CI gate" non-goal, with the bounded justification recorded in
+[`CONSTITUTION.md`](./CONSTITUTION.md) ("A note on the autoreview action").
+
+**Relevance.** Reuses the §3 categorization. The intent/risk-bearing categories
+(dependencies, harness, CI, config, tests) are *review-required*; `code` and `docs`
+are not. A PR touching only `code`/`docs` is eligible for auto-approval. This
+definition will become configurable; for now it is the engine's.
+
+**Policy** — the "no review-required files" behaviour, via
+`.github/triage-autoreview.json` or action inputs (inputs win):
+
+| mode        | behaviour                                                          |
+| ----------- | ----------------------------------------------------------------- |
+| `auto`      | Approve whenever nothing review-required changed. *(default)*     |
+| `never`     | Never auto-approve; always defer to a human.                      |
+| `threshold` | Approve the null case only when total changed files ≤ `maxFiles`. |
+
+Built to grow (richer relevance config, per-category thresholds, path globs).
+
+**Acceptance.**
+
+- A code/docs-only PR is approved with a stated reason; a PR touching any
+  review-required category gets a neutral "human review required" comment, never an
+  approval.
+- `mode: never` never approves; `mode: threshold` approves the null case only within
+  the file cap.
+- Idempotent on re-runs; a prior auto-approval is dismissed once a PR gains
+  review-required changes (principle 5).
+- Decision logic is pure engine code (`packages/engine/src/autoreview/`); the
+  `apps/action` shell only does GitHub I/O.
+
+**Limits.** Forks get a read-only token (the workflow skips them); approvals by
+`github-actions[bot]` do not satisfy required-reviewers branch protection, and the
+bot cannot approve a PR it authored (it falls back to a comment).

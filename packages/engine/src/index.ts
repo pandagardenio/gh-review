@@ -5,9 +5,24 @@
  * UI module or a browser-extension API. The engine is pure logic + contracts.
  */
 
+export type {
+  AutoApprovalPolicy,
+  AutoReviewDecision,
+  AutoReviewMode,
+  AutoReviewOutcome,
+} from './autoreview/model.js';
+export {
+  DEFAULT_POLICY,
+  evaluateAutoReview,
+  parseAutoReviewPolicy,
+} from './autoreview/policy.js';
 export { categorize } from './categorize/categorize.js';
 export type { CategoryId, CategoryRule, FileCategory } from './categorize/model.js';
-export { CATEGORY_RULES } from './categorize/rules.js';
+export {
+  CATEGORY_RULES,
+  isReviewRequiredCategory,
+  REVIEW_REQUIRED_CATEGORIES,
+} from './categorize/rules.js';
 export type {
   DependencyChange,
   DependencyChangeType,

@@ -35,6 +35,7 @@ Every item file carries:
 | [BL-013](./BL-013-bookmarklet-packaging.md) | Bookmarklet packaging (self-contained) | M5 | BL-001 |
 | [BL-014](./BL-014-chrome-extension.md) | Chrome MV3 extension | M5 | BL-001 |
 | [BL-015](./BL-015-cdn-manifest-channel.md) | CDN + manifest update channel (extension) | M5 | BL-001, BL-014 |
+| [BL-016](./BL-016-autoreview-action.md) | Autoreview GitHub Action (opt-in CI surface) | Tooling | BL-002, BL-003 |
 
 ## Suggested delivery order
 

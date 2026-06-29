@@ -66,6 +66,31 @@ concentrate, and away from where they don't — without ever hiding the differen
 - Not a replacement for GitHub, and not a multi-tool dashboard.
 - Not a reviewer-metrics or team-analytics product.
 
+## A note on the autoreview action (a bounded carve-out)
+
+The repo also ships an **opt-in GitHub Action** (BL-016) that auto-approves a pull
+request when nothing review-required changed. Taken literally this strains
+**principle 4** ("the tool never approves") and the non-goal "not a CI gate." We
+allow it under tight limits, and only as a *separate surface* — the browser plugin
+itself still never approves:
+
+- **It approves only the null case.** Approval fires solely when a PR touches *no*
+  intent/risk-bearing category (dependencies, harness, CI, config, tests). Anything
+  that carries intent or risk still routes to a human — the action never judges
+  whether code is *correct*, only whether anything a human must see is present.
+- **It is opt-in and reversible.** A team enables it; `mode: never` disables
+  auto-approval entirely. The relevance line and policy are configurable.
+- **It augments, never replaces (principle 3).** It speaks through GitHub's own
+  review primitives. "Human review required" is a neutral comment, never a block;
+  the *absence* of an approval is what holds the PR — enforced by branch protection,
+  not by us.
+- **It never silently misleads (principle 5).** It states its reasoning, is
+  idempotent, and dismisses its own stale approval the moment a PR gains
+  review-required changes.
+
+This is the line: automating the *null case* is fair game; deciding *correctness*
+on a human's behalf is not, and never will be.
+
 ## How to use this file
 
 When proposing a change, state which principle it serves and which (if any) it strains.

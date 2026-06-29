@@ -1,0 +1,21 @@
+{
+  "name": "@triage/action",
+  "version": "0.0.0",
+  "description": "GitHub Action entry shell: auto-approve PRs with no review-required changes, defer the rest to a human.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@triage/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}

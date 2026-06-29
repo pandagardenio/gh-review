@@ -22,6 +22,16 @@ export interface CategoryRule {
   readonly label: string;
   /** Whether a file path belongs to this rule. First match wins, top to bottom. */
   readonly match: (path: string) => boolean;
+  /**
+   * Whether changes in this category carry the intent/risk a human must review
+   * (Constitution principle 1: dependencies, harness, config, CI, tests). Product
+   * surface — the autoreview policy (BL-016) reads this to decide whether a PR can
+   * be auto-approved. `code` and `docs` are *not* review-required: a PR touching
+   * only those is the low-risk null case. De-emphasis, not hiding (principle 2):
+   * "not review-required" never removes a file from review, it only means the bot
+   * need not block on it.
+   */
+  readonly reviewRequired: boolean;
 }
 
 /** A non-empty bucket with its files and churn counts, ready for BL-005. */

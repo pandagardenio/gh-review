@@ -15,9 +15,16 @@ packages/
   ui/          @triage/ui — CSP-safe DOM construction helpers
                (createElement + CSSOM + addEventListener; never innerHTML).
 apps/
+  action/      @triage/action — GitHub Action entry shell (Node CLI; bundles
+               engine). Auto-approves PRs with no review-required changes,
+               defers the rest to a human (BL-016; opt-in CI surface).
   extension/   @triage/extension — Chrome MV3 entry shell (bundles engine + ui).
   web/         @triage/web — web app placeholder (built later).
 ```
+
+The [autoreview action](./apps/action/README.md) is a **separate, opt-in CI
+surface** — the browser plugin never approves (Constitution principle 4); the
+action's bounded carve-out is documented in `CONSTITUTION.md` and `MVP.md` §9.
 
 Dependencies flow one way only: **apps → ui → engine**. The engine imports no UI
 and no browser-extension API (enforced as BL-001 acceptance).

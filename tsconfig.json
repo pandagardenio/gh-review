@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/engine" },
     { "path": "./packages/ui" },
+    { "path": "./apps/action" },
     { "path": "./apps/extension" },
     { "path": "./apps/web" }
   ]

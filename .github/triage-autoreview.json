@@ -1,0 +1,4 @@
+{
+  "$comment": "Triage autoreview policy (BL-016). mode: auto | never | threshold. For threshold, add \"maxFiles\": <int>. See apps/action/README.md.",
+  "mode": "auto"
+}

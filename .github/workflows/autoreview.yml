@@ -1,0 +1,35 @@
+name: Autoreview
+
+# Opt-in autoreview surface (BL-016). Auto-approves PRs that change nothing
+# review-required; posts a neutral "human review required" comment otherwise.
+# This is a separate CI tool, not the browser plugin — see CONSTITUTION.md.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Least privilege: read the code, write the review. No contents: write.
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: autoreview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  autoreview:
+    name: Triage autoreview
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Forks get a read-only token, so the bot cannot post a review from them.
+    # Skip rather than fail loudly on every fork PR.
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Autoreview
+        uses: ./apps/action
+        with:
+          token: ${{ github.token }}
+          # Policy comes from .github/triage-autoreview.json. Override here with
+          # `mode:` / `max-files:` if you prefer inline config.
