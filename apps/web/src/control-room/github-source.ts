@@ -133,7 +133,7 @@ export class GitHubSource implements FactorySource {
     const paths = entries
       .map((e) => asString(asObject(e).path) ?? '')
       .filter((p) => p.startsWith('runs/') && p.endsWith('.json') && !p.includes('by-workitem'))
-      .sort()
+      .sort((a, b) => a.localeCompare(b))
       .slice(-MAX_RUNS);
     const docs = await Promise.all(
       paths.map((p) =>
