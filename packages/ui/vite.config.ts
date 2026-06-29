@@ -19,6 +19,12 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.ts'],
+    // Resolve the workspace engine from source so UI tests don't require a built
+    // `dist/` — the per-package Sonar coverage job runs `test:coverage` directly,
+    // outside turbo's `^build`, so the engine is otherwise unbuilt there.
+    alias: {
+      '@triage/engine': resolve(__dirname, '../engine/src/index.ts'),
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
