@@ -6,6 +6,7 @@
  */
 export { diffAnchorHref, diffAnchorId } from './anchor.js';
 export { dependencyRows } from './dependency-rows.js';
+export { lazyFileDiff, renderFileDiff } from './diff-view.js';
 export type { ElementOptions } from './dom.js';
 export { el } from './dom.js';
 export type { TriagePanelOptions } from './panel.js';

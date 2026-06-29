@@ -20,6 +20,8 @@ export type { PullRequestLocator, PullRequestRef } from './diff/coordinates.js';
 export { parsePullRequestUrl } from './diff/coordinates.js';
 export type { DiffLoadReason } from './diff/errors.js';
 export { DiffLoadError } from './diff/errors.js';
+export type { DiffHunk, DiffLine, DiffLineKind } from './diff/hunks.js';
+export { parseHunks } from './diff/hunks.js';
 export type { LoadDiffOptions } from './diff/loader.js';
 export { loadPullRequestDiff } from './diff/loader.js';
 export type { DiffFile, FileChangeKind, PullRequestDiff } from './diff/model.js';
