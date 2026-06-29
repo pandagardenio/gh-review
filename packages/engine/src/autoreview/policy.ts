@@ -32,29 +32,26 @@ export function evaluateAutoReview(
   const relevantFileCount = relevant.reduce((sum, category) => sum + category.fileCount, 0);
   const totalFileCount = categories.reduce((sum, category) => sum + category.fileCount, 0);
   const evidence = { relevantCategories, relevantFileCount, totalFileCount };
+  const review = (reason: string): AutoReviewDecision => ({
+    outcome: 'review-required',
+    reason,
+    ...evidence,
+  });
 
   if (policy.mode === 'never') {
-    return {
-      outcome: 'review-required',
-      reason: 'Auto-approval is disabled (mode: never).',
-      ...evidence,
-    };
+    return review('Auto-approval is disabled (mode: never).');
   }
 
   if (relevantFileCount > 0) {
-    return {
-      outcome: 'review-required',
-      reason: `Human review required: ${relevantFileCount} changed file(s) in review-required categories (${relevantCategories.join(', ')}).`,
-      ...evidence,
-    };
+    return review(
+      `Human review required: ${relevantFileCount} changed file(s) in review-required categories (${relevantCategories.join(', ')}).`,
+    );
   }
 
   if (policy.mode === 'threshold' && totalFileCount > policy.maxFiles) {
-    return {
-      outcome: 'review-required',
-      reason: `No review-required changes, but ${totalFileCount} changed files exceeds the auto-approve threshold of ${policy.maxFiles}.`,
-      ...evidence,
-    };
+    return review(
+      `No review-required changes, but ${totalFileCount} changed files exceeds the auto-approve threshold of ${policy.maxFiles}.`,
+    );
   }
 
   return {
