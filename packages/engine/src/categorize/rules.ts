@@ -172,7 +172,9 @@ export const REVIEW_REQUIRED_CATEGORIES: readonly CategoryId[] = CATEGORY_RULES.
   (rule) => rule.reviewRequired,
 ).map((rule) => rule.id);
 
+const REVIEW_REQUIRED_SET = new Set<CategoryId>(REVIEW_REQUIRED_CATEGORIES);
+
 /** Whether a category carries the intent/risk a human must review (BL-016). */
 export function isReviewRequiredCategory(id: CategoryId): boolean {
-  return CATEGORY_RULES.find((rule) => rule.id === id)?.reviewRequired ?? false;
+  return REVIEW_REQUIRED_SET.has(id);
 }
