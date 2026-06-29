@@ -19,20 +19,43 @@ function findNumber(lines: readonly string[], key: string): number | null {
   return null;
 }
 
+/**
+ * Drop a trailing YAML inline comment (`# …`) that sits outside quotes, so a
+ * documented gate (`- pattern: infra/** # only infra`) still parses. A `#`
+ * inside a quoted value, or one not preceded by whitespace, is left intact.
+ */
+function stripInlineComment(line: string): string {
+  let quote: '"' | "'" | null = null;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === '#' && (i === 0 || /\s/.test(line[i - 1] ?? ''))) {
+      return line.slice(0, i);
+    }
+  }
+  return line;
+}
+
 function extractGates(lines: readonly string[]): ApprovalGate[] {
   const gates: ApprovalGate[] = [];
   let inGates = false;
-  for (const line of lines) {
-    if (/^approvalGates:\s*$/.test(line)) {
+  for (const raw of lines) {
+    if (/^approvalGates:\s*$/.test(raw)) {
       inGates = true;
       continue;
     }
     // A new top-level key (non-indented, non-comment) ends the section.
-    if (inGates && /^[A-Za-z]/.test(line)) break;
+    if (inGates && /^[A-Za-z]/.test(raw)) break;
     if (!inGates) continue;
-    const pattern = /-\s*pattern:\s*["']?([^"'#]+?)["']?\s*$/.exec(line);
-    const label = /-\s*label:\s*["']?([^"'#]+?)["']?\s*$/.exec(line);
-    const reviewer = /reviewer:\s*["']?([^"'#]+?)["']?\s*$/.exec(line);
+    // Match against the comment-stripped line; quotes keep a literal `#` in the
+    // value, while a trailing ` # …` comment is removed before matching.
+    const line = stripInlineComment(raw);
+    const pattern = /-\s*pattern:\s*["']?([^"']+?)["']?\s*$/.exec(line);
+    const label = /-\s*label:\s*["']?([^"']+?)["']?\s*$/.exec(line);
+    const reviewer = /reviewer:\s*["']?([^"']+?)["']?\s*$/.exec(line);
     if (pattern?.[1]) gates.push({ pattern: pattern[1].trim(), reviewer: 'human' });
     else if (label?.[1]) gates.push({ label: label[1].trim(), reviewer: 'human' });
     else if (reviewer?.[1] && gates.length > 0) {

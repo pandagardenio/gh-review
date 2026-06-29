@@ -49,4 +49,14 @@ describe('parsePolicy', () => {
     expect(p.maxConcurrency).toBeNull();
     expect(p.approvalGates).toEqual([]);
   });
+
+  it('keeps a gate that carries a trailing inline comment', () => {
+    const p = parsePolicy('approvalGates:\n  - pattern: infra/** # only infra changes\n');
+    expect(p.approvalGates).toEqual([{ pattern: 'infra/**', reviewer: 'human' }]);
+  });
+
+  it('keeps a literal # inside a quoted gate value', () => {
+    const p = parsePolicy('approvalGates:\n  - pattern: "feature#flagged/**"\n');
+    expect(p.approvalGates).toEqual([{ pattern: 'feature#flagged/**', reviewer: 'human' }]);
+  });
 });

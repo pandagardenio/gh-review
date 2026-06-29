@@ -321,6 +321,11 @@ body {
   text-decoration: none;
 }
 
+.cr-review__cta--missing {
+  color: var(--muted);
+  font-style: italic;
+}
+
 /* Config */
 .cr-gate {
   display: flex;

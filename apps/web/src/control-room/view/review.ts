@@ -34,12 +34,17 @@ function reviewRow(item: ReviewItem): HTMLElement {
   if (item.gatedPaths.length > 0) {
     meta.push(el('span', { class: 'cr-review__paths', text: item.gatedPaths.join(', ') }));
   }
+  // A malformed PR with no html_url would otherwise render a dead link; show a
+  // muted placeholder instead of an anchor that goes nowhere.
+  const cta = item.url
+    ? externalLink('Review on GitHub →', item.url, 'cr-review__cta')
+    : el('span', { class: ['cr-review__cta', 'cr-review__cta--missing'], text: 'No PR link' });
   return el('div', {
     class: 'cr-review',
     children: [
       el('div', { class: 'cr-review__head', children: meta }),
       el('div', { class: 'cr-review__title', text: item.title }),
-      externalLink('Review on GitHub →', item.url, 'cr-review__cta'),
+      cta,
     ],
   });
 }
