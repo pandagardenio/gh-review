@@ -48,6 +48,18 @@ export {
   removeComment,
   setComment,
 } from './review/comments.js';
+export type { DraftResolution, ReviewDraft, ReviewIntent } from './review/draft.js';
+export {
+  createReviewDraft,
+  draftKey,
+  findStaleDrafts,
+  loadDraft,
+  removeDraft,
+  resolveDraftOnOpen,
+  saveDraft,
+} from './review/draft.js';
+export type { DraftStorage } from './review/draft-storage.js';
+export { InMemoryDraftStorage } from './review/draft-storage.js';
 export type { ReviewProgress, ReviewState, SectionProgress } from './review/state.js';
 export {
   createReviewState,

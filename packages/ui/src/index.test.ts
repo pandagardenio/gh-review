@@ -16,8 +16,10 @@ describe('@triage/ui public API', () => {
       'createTestFileView',
       'createImplementationFocus',
       'createCommentableDiff',
+      'createHeadShaNotice',
+      'LocalStorageDraftStorage',
     ]) {
-      expect(ui[name as keyof typeof ui]).toBeDefined();
+      expect(Object.hasOwn(ui, name)).toBe(true);
     }
   });
 });

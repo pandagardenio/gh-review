@@ -7,7 +7,7 @@ import * as engine from './index.js';
 describe('@triage/engine public API', () => {
   it('exports the diff loading + model surface', () => {
     for (const name of ['loadPullRequestDiff', 'parseUnifiedDiff', 'parseHunks', 'DiffLoadError']) {
-      expect(engine[name as keyof typeof engine]).toBeDefined();
+      expect(Object.hasOwn(engine, name)).toBe(true);
     }
   });
 
@@ -23,9 +23,14 @@ describe('@triage/engine public API', () => {
       'overallProgress',
       'createCommentDraft',
       'setComment',
+      'saveDraft',
+      'loadDraft',
+      'resolveDraftOnOpen',
+      'draftKey',
+      'InMemoryDraftStorage',
       'InMemoryTokenStore',
     ]) {
-      expect(engine[name as keyof typeof engine]).toBeDefined();
+      expect(Object.hasOwn(engine, name)).toBe(true);
     }
   });
 });
