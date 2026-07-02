@@ -64,6 +64,23 @@ describe('comment draft', () => {
     ).toEqual(['l', 'r']);
   });
 
+  it('orders comments by path, then side, then line', () => {
+    const draft = createCommentDraft({
+      comments: [
+        { path: 'src/b.ts', line: 1, side: 'RIGHT', body: 'b' },
+        { path: 'src/a.ts', line: 20, side: 'RIGHT', body: 'a-right-20' },
+        { path: 'src/a.ts', line: 5, side: 'RIGHT', body: 'a-right-5' },
+        { path: 'src/a.ts', line: 5, side: 'LEFT', body: 'a-left-5' },
+      ],
+    });
+    expect(draft.comments.map((c) => c.body)).toEqual([
+      'a-left-5', // src/a.ts LEFT 5
+      'a-right-5', // src/a.ts RIGHT 5  (same path+side → line tiebreak)
+      'a-right-20', // src/a.ts RIGHT 20
+      'b', // src/b.ts
+    ]);
+  });
+
   it('restores and dedupes from a serialized value', () => {
     const draft = createCommentDraft({
       comments: [
