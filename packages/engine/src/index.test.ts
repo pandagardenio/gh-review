@@ -28,6 +28,9 @@ describe('@triage/engine public API', () => {
       'resolveDraftOnOpen',
       'draftKey',
       'InMemoryDraftStorage',
+      'submitReview',
+      'intentToEvent',
+      'ReviewSubmitError',
       'InMemoryTokenStore',
     ]) {
       expect(Object.hasOwn(engine, name)).toBe(true);

@@ -69,6 +69,14 @@ export {
   setFilesViewed,
   setFileViewed,
 } from './review/state.js';
+export type {
+  ReviewEvent,
+  ReviewSubmission,
+  ReviewSubmitReason,
+  SubmitReviewOptions,
+  SubmittedReview,
+} from './review/submit.js';
+export { intentToEvent, ReviewSubmitError, submitReview } from './review/submit.js';
 export { ENGINE_VERSION, engineSmoke } from './smoke.js';
 export type { ImplementationTarget } from './testcases/implementation.js';
 export { implementationTarget, resolveImplementationPath } from './testcases/implementation.js';
