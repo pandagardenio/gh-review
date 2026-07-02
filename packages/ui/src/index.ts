@@ -11,6 +11,8 @@ export { dependencyRows } from './dependency-rows.js';
 export { lazyFileDiff, renderFileDiff } from './diff-view.js';
 export type { ElementOptions } from './dom.js';
 export { el } from './dom.js';
+export type { FinishReviewOptions } from './finish-review.js';
+export { createFinishReview } from './finish-review.js';
 export type { HeadShaNoticeOptions } from './head-sha-notice.js';
 export { createHeadShaNotice } from './head-sha-notice.js';
 export type { ImplementationFocusOptions } from './implementation-focus.js';
