@@ -46,6 +46,19 @@ importers:
         specifier: ^22.10.0
         version: 22.20.0
 
+  apps/bookmarklet:
+    dependencies:
+      '@triage/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@triage/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+
   apps/extension:
     dependencies:
       '@triage/engine':

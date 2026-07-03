@@ -19,6 +19,8 @@ describe('@triage/ui public API', () => {
       'createHeadShaNotice',
       'LocalStorageDraftStorage',
       'createFinishReview',
+      'LocalStorageTokenStore',
+      'createTokenEntry',
     ]) {
       expect(Object.hasOwn(ui, name)).toBe(true);
     }
