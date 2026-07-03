@@ -21,6 +21,8 @@ export { LocalStorageDraftStorage } from './local-storage-draft-storage.js';
 export { LocalStorageTokenStore } from './local-storage-token-store.js';
 export type { TriagePanelOptions } from './panel.js';
 export { createTriagePanel } from './panel.js';
+export type { ReviewAppOptions } from './review-app.js';
+export { createReviewApp } from './review-app.js';
 export type { ReviewFlow, ReviewFlowOptions } from './review-flow.js';
 export { createReviewFlow } from './review-flow.js';
 export type { TestFileViewOptions } from './test-file-view.js';
