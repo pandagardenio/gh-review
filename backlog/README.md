@@ -1,9 +1,11 @@
 # Backlog
 
-Independent, PR-sized work items derived from [`../MVP.md`](../MVP.md). Each item is
+Independent, PR-sized work items. BL-001–BL-020 derive from [`../MVP.md`](../MVP.md)
+and are justified against [`../CONSTITUTION.md`](../CONSTITUTION.md); BL-021+ are the
+**Control Room** stream (milestones CR1–CR3), justified against
+[`../CONTROL-ROOM-CONSTITUTION.md`](../CONTROL-ROOM-CONSTITUTION.md). Each item is
 scoped to be landable on its own (per the "small PRs scoped by category" agreement in
-[`../CLAUDE.md`](../CLAUDE.md)) and is justified against
-[`../CONSTITUTION.md`](../CONSTITUTION.md).
+[`../CLAUDE.md`](../CLAUDE.md)).
 
 ## How to read an item
 
@@ -40,6 +42,15 @@ Every item file carries:
 | [BL-018](./BL-018-bookmarklet-pages-deploy.md) | Bookmarklet install page auto-deploy (Pages) | Tooling | BL-013, BL-017 |
 | [BL-019](./BL-019-webstore-publish.md) | Chrome Web Store auto-publish | Tooling | BL-014, BL-017 |
 | [BL-020](./BL-020-channel-publish.md) | Update channel auto-publish (static host) | Tooling | BL-015, BL-017 |
+| [BL-021](./BL-021-fleet-core-package.md) | Fleet core package (`@triage/fleet`) + session-ledger schema | CR1 | BL-001 |
+| [BL-022](./BL-022-provenance-metrics.md) | Provenance metrics (agent vs manual share) | CR1 | BL-021 |
+| [BL-023](./BL-023-ci-health-metrics.md) | CI-health metrics for agent work | CR1 | BL-021, BL-022 |
+| [BL-024](./BL-024-harness-health-score.md) | Harness-health score | CR1 | BL-022, BL-023 |
+| [BL-025](./BL-025-github-baseline-source.md) | GitHub baseline fleet source | CR2 | BL-021 |
+| [BL-026](./BL-026-cli-ledger-emitter.md) | CLI scaffolding + ledger emitter | CR2 | BL-021 |
+| [BL-027](./BL-027-ledger-fleet-source.md) | Ledger fleet source + active sessions | CR2 | BL-021, BL-025 |
+| [BL-028](./BL-028-cockpit-tui.md) | Cockpit TUI (`triage fleet\|sessions\|repo`) | CR3 | BL-024, BL-025, BL-026 |
+| [BL-029](./BL-029-web-fleet-cockpit.md) | Web fleet cockpit (generalize `apps/web`) | CR3 | BL-024, BL-025 |
 
 ## Suggested delivery order
 
@@ -54,3 +65,17 @@ Every item file carries:
 
 The riskiest integration (comment anchoring, MVP.md §7) lives in BL-010/BL-012 — validate
 it against a real PR as early as BL-006 lands, not at the end.
+
+### Control Room (CR1–CR3)
+
+1. **CR1 core:** BL-021 → BL-022 → BL-023 → BL-024 (pure `@triage/fleet` logic; each
+   lands with fixtures only).
+2. **CR2 sources:** BL-025 and BL-026 in parallel after BL-021 → BL-027 composes them.
+3. **CR3 cockpits:** BL-028 and BL-029 in parallel; both are thin shells over the same
+   core, so neither blocks the other.
+
+The riskiest assumptions here are BL-025's **rate-limit budget at ~40 repos** (validate
+against a real fleet-sized repo list as soon as BL-025 works, before building surfaces
+on it) and BL-026's **ledger writes never disturbing a live session's working tree**
+(validate in a scratch repo with a real Claude Code session early in BL-026). Surfaces
+can start on `FixtureFleetSource` before either source lands.

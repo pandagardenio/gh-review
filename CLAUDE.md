@@ -1,19 +1,26 @@
 # CLAUDE.md
 
-Orientation for Claude Code working on **Triage** (working name): a browser plugin that
-provides an alternative GitHub pull-request review flow for the agentic era.
+Orientation for Claude Code working in this repo — a two-product **coding station**:
+
+- **Triage** (working name): a browser plugin providing an alternative GitHub
+  pull-request review flow for the agentic era.
+- **Control Room**: a fleet cockpit for coding agents (CLI/TUI + web) — sessions,
+  code provenance, CI health, harness health — for the lead running many agentic repos.
 
 ## Read first
 
-1. [`CONSTITUTION.md`](./CONSTITUTION.md) — the north star. It **wins** over convenience.
-   Every change must pass its first principle: *reduce human escalation while preserving
-   review accuracy where it matters.*
-2. [`MVP.md`](./MVP.md) — scope, features, delivery, milestones, and the validated
-   technical constraints (§6) and risks (§7).
+1. [`CONSTITUTION.md`](./CONSTITUTION.md) — Triage's north star. It **wins** over
+   convenience. Every change must pass its first principle: *reduce human escalation
+   while preserving review accuracy where it matters.*
+2. [`MVP.md`](./MVP.md) — Triage scope, features, delivery, milestones, and the
+   validated technical constraints (§6) and risks (§7).
+3. [`CONTROL-ROOM-CONSTITUTION.md`](./CONTROL-ROOM-CONSTITUTION.md) — the Control
+   Room's north star. Hard line: *measure machines and harnesses, never people.*
 
 Before scoping or building a feature, state which constitution principle it serves and
-which (if any) it strains. Principles 2 (de-emphasize, never hide) and 4 (reviewer stays
-accountable) need an explicit written justification if strained.
+which (if any) it strains. For Triage, principles 2 (de-emphasize, never hide) and 4
+(reviewer stays accountable) need an explicit written justification if strained; for
+the Control Room, principles 1 (never people) and 5 (observation is not control) do.
 
 ## Current state
 
@@ -28,7 +35,13 @@ accountable) need an explicit written justification if strained.
   split is the realized structure — keep to it.
 - The original bookmarklet prototype that served as M1's behavioural reference has been
   superseded by `apps/bookmarklet`, which bundles the same engine + UI as the extension.
-- New work should start from the MVP acceptance criteria and land as new backlog items.
+- **The Control Room is specced, not built** (BL-021–BL-029, milestones CR1–CR3): a
+  `@triage/fleet` core (session-ledger schema, provenance/CI/harness-health metrics),
+  a tiered GitHub-baseline + ledger data plane, and two cockpit surfaces — a CLI
+  (`apps/cli`, emitter + TUI) and the fleet web app. A single-repo prototype lives in
+  `apps/web/src/control-room` and gets generalized by BL-029.
+- New work should start from the relevant acceptance criteria (MVP.md or the CR backlog
+  items) and land as new backlog items.
 
 ## Repository layout & toolchain
 
@@ -40,8 +53,14 @@ packages/engine/   @triage/engine — provider- & UI-agnostic core (diff model, 
                    categorization, TokenStore contract). Runs from bookmarklet AND extension.
 packages/ui/       @triage/ui — CSP-safe DOM helpers (createElement + CSSOM + addEventListener).
 apps/extension/    @triage/extension — Chrome MV3 entry shell (bundles engine + ui).
-apps/web/          @triage/web — web app placeholder (built later).
+apps/web/          @triage/web — Control Room web cockpit (single-repo prototype today;
+                   fleet view lands with BL-029).
 ```
+
+Planned by the Control Room stream (BL-021, BL-026): `packages/fleet` (`@triage/fleet`,
+the pure fleet core — same isolation discipline as the engine) and `apps/cli`
+(`@triage/cli`, ledger emitter + cockpit TUI). Dependencies stay one-way:
+apps → fleet/ui → engine.
 
 The **engine must stay provider- and UI-agnostic**: no imports of `@triage/ui` or app
 code, no browser-extension APIs, no DOM. This is enforced two ways — the `engine-isolation`
