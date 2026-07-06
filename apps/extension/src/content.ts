@@ -12,7 +12,6 @@
 
 import { createReviewApp } from '@triage/ui';
 import { ChromeStorageTokenStore } from './chrome-storage-token-store.js';
-import { EXTENSION_VERSION } from './version.js';
 
 const PANEL_ID = 'triage-extension-panel';
 
@@ -20,7 +19,9 @@ function main(): void {
   document.getElementById(PANEL_ID)?.remove();
   const app = createReviewApp({
     tokens: new ChromeStorageTokenStore(),
-    version: EXTENSION_VERSION,
+    // The one version source: the manifest Chrome enforces (content scripts may
+    // call runtime.getManifest); the channel publish reads the same file.
+    version: chrome.runtime.getManifest().version,
   });
   app.id = PANEL_ID;
   document.body.appendChild(app);

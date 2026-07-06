@@ -68,5 +68,9 @@ pnpm dev            # turbo: watch builds
 - Each package/app emits to its own `dist/`. The extension produces a single
   **self-contained** `dist/content.js` (engine + ui inlined — github.com's CSP
   forbids remote code).
-- The content-hashed bundle + `manifest.json` update channel for the extension
-  is **BL-014 / BL-015**; the bookmarklet packaging is **BL-013**.
+- The extension build also publishes its update channel (**BL-015**) to
+  `dist/channel/`: the bundle under its content-hash name plus a never-cached
+  `manifest.json` naming it (cache policy in
+  [`apps/extension/README.md`](./apps/extension/README.md)).
+- The bookmarklet packaging (**BL-013**) emits `dist/bookmarklet.txt` (the
+  self-contained `javascript:` URL) and `dist/install.html`.

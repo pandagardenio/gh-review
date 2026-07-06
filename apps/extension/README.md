@@ -29,6 +29,11 @@ dist/channel/
   triage-<hash16>.js       # the bundle under (a prefix of) its SHA-256 content hash
 ```
 
+The channel version is read from `public/manifest.json` — the one version Chrome
+enforces (the panel header shows the same value via `chrome.runtime.getManifest()`).
+The published bundle is the in-memory chunk, without the `sourceMappingURL` pointer
+the local `dist/content.js` carries: sourcemaps are not part of the channel.
+
 To publish, upload `dist/channel/` to a static host with the validated cache policy
 (MVP.md §5.2, pinned as constants in `src/update-channel/channel.ts`):
 

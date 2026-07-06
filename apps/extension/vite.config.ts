@@ -1,30 +1,42 @@
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
-import { createChannelManifest, serializeChannelManifest } from './src/update-channel/channel.js';
-import { EXTENSION_VERSION } from './src/version.js';
+import {
+  CHANNEL_MANIFEST_NAME,
+  createChannelManifest,
+  serializeChannelManifest,
+} from './src/update-channel/channel.js';
 
 // MV3 content script bundle. CSP on github.com forbids remote code, so the entry
 // shell must be fully self-contained: bundle the engine and UI in (no externals).
 // The content script runs in the extension's isolated world; the token store is
 // backed by chrome.storage (BL-014).
 //
-// After the bundle is written, a closeBundle hook publishes the update channel
-// (BL-015) to dist/channel/: the same bundle under its content-hashed name plus
-// a manifest.json naming it. Serve the manifest with MANIFEST_CACHE_CONTROL and
+// After a successful write, a writeBundle hook publishes the update channel
+// (BL-015) to dist/channel/: the content bundle under its content-hashed name
+// plus a manifest naming it. It runs on the in-memory chunk — never on a failed
+// build, and without the sourcemap pointer the written file carries (the map is
+// not published). The channel version comes from public/manifest.json, the one
+// version Chrome enforces. Serve the manifest with MANIFEST_CACHE_CONTROL and
 // the hashed bundle with BUNDLE_CACHE_CONTROL (see src/update-channel/channel.ts).
 // Extension-only — never wired to the github.com bookmarklet (MVP.md §5.2).
-const channelPlugin = {
+const channelPlugin: Plugin = {
   name: 'emit-update-channel',
-  closeBundle() {
-    const bundlePath = resolve(__dirname, 'dist/content.js');
-    const hash = createHash('sha256').update(readFileSync(bundlePath)).digest('hex');
-    const manifest = createChannelManifest(EXTENSION_VERSION, hash);
+  writeBundle(_options, bundle) {
+    const chunk = bundle['content.js'];
+    if (chunk?.type !== 'chunk') return;
+    const { version } = JSON.parse(
+      readFileSync(resolve(__dirname, 'public/manifest.json'), 'utf8'),
+    ) as { version: string };
+    const source = chunk.code.replace(/\/\/# sourceMappingURL=\S+\s*$/, '');
+    const hash = createHash('sha256').update(source).digest('hex');
+    const manifest = createChannelManifest(version, hash);
     const channelDir = resolve(__dirname, 'dist/channel');
     mkdirSync(channelDir, { recursive: true });
-    copyFileSync(bundlePath, resolve(channelDir, manifest.bundle));
-    writeFileSync(resolve(channelDir, 'manifest.json'), serializeChannelManifest(manifest));
+    writeFileSync(resolve(channelDir, manifest.bundle), source);
+    writeFileSync(resolve(channelDir, CHANNEL_MANIFEST_NAME), serializeChannelManifest(manifest));
   },
 };
 
@@ -56,8 +68,8 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
       include: ['src/**/*.ts'],
-      // The entry shell and version constant are wiring, not logic.
-      exclude: ['src/**/*.test.ts', 'src/content.ts', 'src/version.ts'],
+      // The entry shell is wiring, not logic.
+      exclude: ['src/**/*.test.ts', 'src/content.ts'],
     },
   },
 });

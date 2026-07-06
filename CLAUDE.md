@@ -18,15 +18,17 @@ accountable) need an explicit written justification if strained.
 ## Current state
 
 - The product docs above exist and are authoritative.
-- **BL-001 scaffolding is in place** (see [`README.md`](./README.md)): a pnpm + Turborepo
-  monorepo with `packages/engine`, `packages/ui`, `apps/extension`, `apps/web`; Vite +
-  Vitest + Biome; Husky hooks; GitHub Actions CI. The engine/ui/entry-shell split is the
-  realized structure — keep to it.
-- A **working bookmarklet prototype** exists as the behavioural reference for **M1**
-  (categorized triage panel: `.diff`→API loading, path categorization, `package.json`
-  dependency expansion, jump-to-file via native anchors). Treat it as the spec for M1
-  output, not as code to preserve verbatim.
-- Everything else (M2–M5 in MVP.md) is unbuilt.
+- **The MVP backlog is fully built** (BL-001–BL-016, see [`backlog/`](./backlog/)):
+  M1 engine + triage panel, M2 diff renderer + sectioned review flow, M3 test-case
+  parsing + implementation focus, M4 inline comments + draft persistence + review
+  materialization, M5 bookmarklet packaging + Chrome MV3 extension + the extension's
+  CDN/manifest update channel, plus the opt-in autoreview GitHub Action (MVP.md §9).
+- The structure is the pnpm + Turborepo monorepo described in [`README.md`](./README.md):
+  `packages/engine`, `packages/ui`, and entry shells under `apps/`. The engine/ui/entry-shell
+  split is the realized structure — keep to it.
+- The original bookmarklet prototype that served as M1's behavioural reference has been
+  superseded by `apps/bookmarklet`, which bundles the same engine + UI as the extension.
+- New work should start from the MVP acceptance criteria and land as new backlog items.
 
 ## Repository layout & toolchain
 
