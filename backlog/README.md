@@ -36,6 +36,10 @@ Every item file carries:
 | [BL-014](./BL-014-chrome-extension.md) | Chrome MV3 extension | M5 | BL-001 |
 | [BL-015](./BL-015-cdn-manifest-channel.md) | CDN + manifest update channel (extension) | M5 | BL-001, BL-014 |
 | [BL-016](./BL-016-autoreview-action.md) | Autoreview GitHub Action (opt-in CI surface) | Tooling | BL-002, BL-003 |
+| [BL-017](./BL-017-release-workflow.md) | Release workflow (tag → build → GitHub Release) | Tooling | BL-013, BL-014, BL-015 |
+| [BL-018](./BL-018-bookmarklet-pages-deploy.md) | Bookmarklet install page auto-deploy (Pages) | Tooling | BL-013, BL-017 |
+| [BL-019](./BL-019-webstore-publish.md) | Chrome Web Store auto-publish | Tooling | BL-014, BL-017 |
+| [BL-020](./BL-020-channel-publish.md) | Update channel auto-publish (static host) | Tooling | BL-015, BL-017 |
 
 ## Suggested delivery order
 
@@ -44,6 +48,9 @@ Every item file carries:
 3. **M3 tests:** BL-008 → BL-009.
 4. **M4 review loop:** BL-010 → BL-011 → BL-012.
 5. **M5 delivery:** BL-013 (any time after BL-001); BL-014 → BL-015.
+6. **Release automation:** BL-017 first (the tag-triggered trigger surface), then
+   BL-018, BL-019, BL-020 in parallel — each release deploys every surface with no
+   manual steps. BL-020 can be deferred until the channel has a consumer.
 
 The riskiest integration (comment anchoring, MVP.md §7) lives in BL-010/BL-012 — validate
 it against a real PR as early as BL-006 lands, not at the end.
