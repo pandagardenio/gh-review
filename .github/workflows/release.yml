@@ -225,3 +225,87 @@ jobs:
               exit 1
               ;;
           esac
+
+  # BL-020: publish dist/channel/ to the static host with the validated cache
+  # policy (MVP.md §5.2, pinned in apps/extension/src/update-channel/channel.ts):
+  # manifest.json → no-store, hashed bundle → immutable. The bundle is uploaded
+  # BEFORE the manifest so a reader never sees a manifest naming a bundle that
+  # is not there yet. Host contract: any S3-compatible bucket (AWS S3,
+  # Cloudflare R2, MinIO — set CHANNEL_ENDPOINT_URL for non-AWS). Gated on the
+  # CHANNEL_BUCKET repo variable (same dormancy pattern as Sonar / the Web
+  # Store job) so it skips cleanly until a host is configured. Publishes the
+  # exact pair attached to the GitHub Release. Never wired to the github.com
+  # bookmarklet.
+  channel:
+    name: Publish update channel (static host)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: release
+    if: ${{ vars.CHANNEL_BUCKET != '' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Download the released channel pair
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --pattern "triage-channel-*.zip" --output channel.zip
+          mkdir -p channel
+          unzip channel.zip -d channel
+          ls -l channel
+
+      - name: Upload bundle first, manifest last
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CHANNEL_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CHANNEL_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.CHANNEL_REGION || 'us-east-1' }}
+          CHANNEL_BUCKET: ${{ vars.CHANNEL_BUCKET }}
+          CHANNEL_PREFIX: ${{ vars.CHANNEL_PREFIX || 'triage' }}
+          CHANNEL_ENDPOINT_URL: ${{ vars.CHANNEL_ENDPOINT_URL }}
+        run: |
+          set -euo pipefail
+          for v in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [ -z "${!v:-}" ]; then
+              echo "::error::CHANNEL_${v#AWS_} is not set, but CHANNEL_BUCKET is configured so publishing was expected. Add the secret or unset the variable."
+              exit 1
+            fi
+          done
+
+          ENDPOINT_ARGS=()
+          if [ -n "${CHANNEL_ENDPOINT_URL:-}" ]; then
+            ENDPOINT_ARGS=(--endpoint-url "$CHANNEL_ENDPOINT_URL")
+          fi
+          DEST="s3://${CHANNEL_BUCKET}/${CHANNEL_PREFIX}"
+
+          BUNDLE=$(ls channel/triage-*.js)
+          # Values mirror BUNDLE_CACHE_CONTROL / MANIFEST_CACHE_CONTROL in
+          # apps/extension/src/update-channel/channel.ts — keep them in sync.
+          aws s3 cp "$BUNDLE" "$DEST/$(basename "$BUNDLE")" \
+            --cache-control "public, max-age=31536000, immutable" \
+            --content-type "application/javascript" "${ENDPOINT_ARGS[@]}"
+          aws s3 cp channel/manifest.json "$DEST/manifest.json" \
+            --cache-control "no-store" \
+            --content-type "application/json" "${ENDPOINT_ARGS[@]}"
+
+      # Optional end-to-end check: set CHANNEL_PUBLIC_URL (the public base URL
+      # of the prefix) and the loader contract is verified against the live
+      # host — the manifest is served no-store, and the bundle it names is
+      # reachable with the immutable policy.
+      - name: Verify live channel headers
+        if: ${{ vars.CHANNEL_PUBLIC_URL != '' }}
+        env:
+          CHANNEL_PUBLIC_URL: ${{ vars.CHANNEL_PUBLIC_URL }}
+        run: |
+          set -euo pipefail
+          BASE="${CHANNEL_PUBLIC_URL%/}"
+          MANIFEST_HEADERS=$(curl -sS -D - -o manifest.json "$BASE/manifest.json")
+          echo "$MANIFEST_HEADERS"
+          echo "$MANIFEST_HEADERS" | grep -i "cache-control" | grep -qi "no-store" \
+            || { echo "::error::manifest.json is not served with Cache-Control: no-store"; exit 1; }
+          BUNDLE_NAME=$(jq -r .bundle manifest.json)
+          BUNDLE_HEADERS=$(curl -sS -I "$BASE/$BUNDLE_NAME")
+          echo "$BUNDLE_HEADERS"
+          echo "$BUNDLE_HEADERS" | grep -i "cache-control" | grep -qi "immutable" \
+            || { echo "::error::$BUNDLE_NAME is not served with the immutable cache policy"; exit 1; }

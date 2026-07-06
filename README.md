@@ -94,8 +94,11 @@ extension zip to the Chrome Web Store (**BL-019**) once the one-time bootstrap i
 create the developer account and first listing manually, mint the OAuth credentials,
 then set the `CWS_EXTENSION_ID` repo **variable** (the job's dormancy gate, same
 pattern as Sonar's `SONAR_ORGANIZATION`) and the `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET`
-/ `CWS_REFRESH_TOKEN` secrets — until then the job skips cleanly. The remaining
-per-surface deploy (update channel — BL-020) chains off this workflow when it lands.
+/ `CWS_REFRESH_TOKEN` secrets — until then the job skips cleanly. Finally it publishes
+the update channel (**BL-020**) to any S3-compatible bucket with the validated cache
+policy, bundle before manifest; gate it on with the `CHANNEL_BUCKET` variable +
+`CHANNEL_ACCESS_KEY_ID` / `CHANNEL_SECRET_ACCESS_KEY` secrets (full contract in
+[`apps/extension/README.md`](./apps/extension/README.md)).
 
 The Pages job self-enables GitHub Pages on first run (`configure-pages` with
 `enablement: true`); if the repo restricts that, set Pages → Source → GitHub Actions

@@ -45,6 +45,17 @@ To publish, upload `dist/channel/` to a static host with the validated cache pol
 - `triage-<hash16>.js` → `Cache-Control: public, max-age=31536000, immutable` (safe —
   the filename is its content hash).
 
+Publishing is automatic per release (**BL-020**, the `channel` job in
+`.github/workflows/release.yml`): the released channel pair is uploaded — bundle
+first, manifest last, so a reader never sees a manifest naming a missing bundle —
+to the recorded host choice: **any S3-compatible bucket** (AWS S3, Cloudflare R2,
+MinIO). Configure repo variables `CHANNEL_BUCKET` (the dormancy gate — the job skips
+until it is set), optional `CHANNEL_PREFIX` (default `triage`), `CHANNEL_REGION`,
+`CHANNEL_ENDPOINT_URL` (required for non-AWS hosts), optional `CHANNEL_PUBLIC_URL`
+(enables the post-publish live header check), and secrets `CHANNEL_ACCESS_KEY_ID` /
+`CHANNEL_SECRET_ACCESS_KEY`. The bucket/CDN must serve the objects' stored
+`Cache-Control` headers (S3, R2, and CloudFront do by default).
+
 `src/update-channel/loader.ts` is the thin consumer: it reads the manifest (bypassing
 caches), loads the hashed bundle it names, and verifies the bytes against the
 manifest's full `sha256` before returning them (the manifest itself is unsigned —
