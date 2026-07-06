@@ -51,6 +51,8 @@ Every item file carries:
 | [BL-027](./BL-027-ledger-fleet-source.md) | Ledger fleet source + active sessions | CR2 | BL-021, BL-025 |
 | [BL-028](./BL-028-cockpit-tui.md) | Cockpit TUI (`triage fleet\|sessions\|repo`) | CR3 | BL-024, BL-025, BL-026 |
 | [BL-029](./BL-029-web-fleet-cockpit.md) | Web fleet cockpit (generalize `apps/web`) | CR3 | BL-024, BL-025 |
+| [BL-030](./BL-030-release-please-semver.md) | Automated semver releases (Release Please) | Tooling | BL-017 |
+| [BL-031](./BL-031-per-component-releases.md) | Per-component release trains (independent tags) | Tooling | BL-030 |
 
 ## Suggested delivery order
 
@@ -62,6 +64,9 @@ Every item file carries:
 6. **Release automation:** BL-017 first (the tag-triggered trigger surface), then
    BL-018, BL-019, BL-020 in parallel — each release deploys every surface with no
    manual steps. BL-020 can be deferred until the channel has a consumer.
+7. **Versioning:** BL-030 (semver computed from conventional commits; releasing = one
+   click on the rolling release PR) → BL-031 (independent tag families per app:
+   `extension-v*`, `bookmarklet-v*`, `action-v*`).
 
 The riskiest integration (comment anchoring, MVP.md §7) lives in BL-010/BL-012 — validate
 it against a real PR as early as BL-006 lands, not at the end.
