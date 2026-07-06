@@ -77,15 +77,27 @@ pnpm dev            # turbo: watch builds
 
 ## Releasing
 
-Releases are fully automatic (**BL-017**, `.github/workflows/release.yml`): the only
-manual action is tagging.
+Releasing is one click (**BL-030**, `.github/workflows/release-please.yml`). You never
+bump the version or craft a tag by hand:
 
-1. Bump `version` in `apps/extension/public/manifest.json` — the single version source
-   — and land that on `main`.
-2. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z` (the tag must match the
-   manifest version; a mismatch fails the release before anything publishes).
+1. Merge feature/fix PRs to `main` as usual. Release Please reads the conventional
+   commits (`feat:` → minor, `fix:` → patch, `!`/`BREAKING CHANGE` → major) and keeps a
+   rolling **release PR** open that bumps `apps/extension/public/manifest.json` (the
+   single version source) and accumulates the changelog.
+2. When you want to ship, **merge the release PR**. That creates the `vX.Y.Z` tag, which
+   triggers the release train below. Cadence stays a human decision — nothing releases
+   until you merge that PR (the Web Store review queue, BL-019, punishes releasing on
+   every merge).
 
-The workflow re-runs the full quality gate, then publishes a GitHub Release with the
+> **One-time bootstrap:** set a `RELEASE_PLEASE_TOKEN` secret to a PAT (or GitHub App
+> token) with `contents: write`, so the tag Release Please pushes actually triggers
+> `release.yml` — GitHub suppresses workflow triggers from the default `GITHUB_TOKEN`.
+> Without it the release PR and tag are still created, but you must re-push the tag to
+> kick the train (`git push origin :vX.Y.Z && git push origin vX.Y.Z`).
+
+The release train (**BL-017**, `.github/workflows/release.yml`) re-runs the full quality
+gate — it re-verifies the tag matches `apps/extension/public/manifest.json`, so a stray
+hand-pushed tag still fails safely — then publishes a GitHub Release with the
 extension zip (channel excluded), the bookmarklet `install.html` + `bookmarklet.txt`,
 and the update-channel pair. It then deploys the bookmarklet install page to GitHub
 Pages (**BL-018**) — the canonical install URL always serves the latest release, and

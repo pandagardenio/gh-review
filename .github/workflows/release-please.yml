@@ -1,0 +1,43 @@
+# BL-030: Automated semver releases. Release Please watches main, computes the
+# next version from the conventional commits merged since the last release
+# (feat -> minor, fix -> patch, ! / BREAKING CHANGE -> major; the repo's
+# `type: <emoji> subject` format parses cleanly — the emoji is just changelog
+# text), and maintains a rolling release PR that bumps
+# apps/extension/public/manifest.json (the single version source, via extra-files)
+# and the changelog. Merging that PR creates the vX.Y.Z tag, which triggers the
+# BL-017 release train (release.yml) unchanged.
+#
+# Cadence stays a human decision: nothing releases without a human merging the
+# release PR (the Web Store review queue, BL-019, punishes release-on-every-merge).
+#
+# One-time bootstrap: set RELEASE_PLEASE_TOKEN to a PAT (or GitHub App token) with
+# `contents: write` so the tag it pushes triggers release.yml — GitHub suppresses
+# workflow triggers from the default GITHUB_TOKEN. Without it the release PR and
+# tag are still created, but the release train must be kicked by re-pushing the
+# tag (`git push origin :vX.Y.Z && git push origin vX.Y.Z`).
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Maintain release PR / tag on merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Config + manifest live at the repo root under their default names
+      # (release-please-config.json, .release-please-manifest.json), so the
+      # action auto-detects them.
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
