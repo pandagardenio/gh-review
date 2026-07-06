@@ -89,8 +89,13 @@ The workflow re-runs the full quality gate, then publishes a GitHub Release with
 extension zip (channel excluded), the bookmarklet `install.html` + `bookmarklet.txt`,
 and the update-channel pair. It then deploys the bookmarklet install page to GitHub
 Pages (**BL-018**) — the canonical install URL always serves the latest release, and
-re-installing from it is how the bookmarklet updates. Remaining per-surface deploys
-(Web Store, update channel — BL-019/020) chain off this workflow as they land.
+re-installing from it is how the bookmarklet updates. It also submits the released
+extension zip to the Chrome Web Store (**BL-019**) once the one-time bootstrap is done:
+create the developer account and first listing manually, mint the OAuth credentials,
+then set the `CWS_EXTENSION_ID` repo **variable** (the job's dormancy gate, same
+pattern as Sonar's `SONAR_ORGANIZATION`) and the `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET`
+/ `CWS_REFRESH_TOKEN` secrets — until then the job skips cleanly. The remaining
+per-surface deploy (update channel — BL-020) chains off this workflow when it lands.
 
 The Pages job self-enables GitHub Pages on first run (`configure-pages` with
 `enablement: true`); if the repo restricts that, set Pages → Source → GitHub Actions
