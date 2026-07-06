@@ -17,6 +17,13 @@
       "message": "The engine is provider- and UI-agnostic: it must not import UI or app code. Dependencies flow apps → ui → engine only (rule: engine-isolation). Browser globals are already rejected by the engine's tsconfig (no DOM/chrome libs). See CLAUDE.md."
     },
     {
+      "id": "channel-isolation",
+      "type": "content-forbidden",
+      "pathRegex": ".*/apps/bookmarklet/src/.*\\.ts$",
+      "regex": "update-channel",
+      "message": "The CDN/manifest update channel is extension-only (BL-015). github.com CSP forbids remote code, so the bookmarklet stays self-contained (BL-013) and must never wire to the channel (rule: channel-isolation). See MVP.md §5.2."
+    },
+    {
       "id": "csp-no-html-injection",
       "type": "content-forbidden",
       "pathRegex": ".*/(packages/ui|apps)/.*\\.ts$",
