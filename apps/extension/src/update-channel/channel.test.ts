@@ -30,7 +30,12 @@ describe('update channel manifest', () => {
       schema: 1,
       version: '1.2.3',
       bundle: 'triage-ab34ef1290cd5678.js',
+      sha256: HASH,
     });
+  });
+
+  it('stores the full digest lowercased so integrity comparison is casing-proof', () => {
+    expect(createChannelManifest('1.2.3', HASH.toUpperCase()).sha256).toBe(HASH);
   });
 
   it('rejects an empty version at publish time', () => {
@@ -52,13 +57,20 @@ describe('update channel manifest', () => {
   });
 
   it('parse names the defect: missing version', () => {
-    const text = JSON.stringify({ schema: 1, bundle: 'triage-a.js' });
+    const text = JSON.stringify({ schema: 1, bundle: 'triage-a.js', sha256: HASH });
     expect(() => parseChannelManifest(text)).toThrow(/missing a version/);
+  });
+
+  it('parse names the defect: missing or malformed sha256', () => {
+    for (const sha256 of [undefined, 'ab34ef', `${HASH.slice(0, 63)}z`]) {
+      const text = JSON.stringify({ schema: 1, version: '1.0.0', bundle: 'triage-a.js', sha256 });
+      expect(() => parseChannelManifest(text)).toThrow(/sha256/);
+    }
   });
 
   it('parse rejects bundle names that could escape the channel directory', () => {
     for (const bundle of ['../evil.js', 'a/b.js', 'https://evil.example/x.js', 'triage.css']) {
-      const text = JSON.stringify({ schema: 1, version: '1.0.0', bundle });
+      const text = JSON.stringify({ schema: 1, version: '1.0.0', bundle, sha256: HASH });
       expect(() => parseChannelManifest(text)).toThrow(/plain \.js filename/);
     }
   });

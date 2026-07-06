@@ -19,9 +19,9 @@
     {
       "id": "channel-isolation",
       "type": "content-forbidden",
-      "pathRegex": ".*/apps/bookmarklet/src/.*\\.ts$",
-      "regex": "update-channel",
-      "message": "The CDN/manifest update channel is extension-only (BL-015). github.com CSP forbids remote code, so the bookmarklet stays self-contained (BL-013) and must never wire to the channel (rule: channel-isolation). See MVP.md §5.2."
+      "pathRegex": ".*/apps/bookmarklet/.*\\.ts$",
+      "regex": "(from\\s+['\"][^'\"]*(update-channel|channel-entry)|import\\s*\\(\\s*['\"][^'\"]*(update-channel|channel-entry)|require\\s*\\(\\s*['\"][^'\"]*(update-channel|channel-entry))",
+      "message": "The CDN/manifest update channel is extension-only (BL-015). github.com CSP forbids remote code, so the bookmarklet stays self-contained (BL-013) and must never import the channel modules (rule: channel-isolation). See MVP.md §5.2."
     },
     {
       "id": "csp-no-html-injection",

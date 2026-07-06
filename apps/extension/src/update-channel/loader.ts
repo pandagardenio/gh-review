@@ -1,6 +1,7 @@
 /**
- * Thin channel loader (BL-015): read the never-cached manifest, then load the
- * content-hashed bundle it names (MVP.md §5.2).
+ * Thin channel loader (BL-015): read the never-cached manifest, load the
+ * content-hashed bundle it names, and verify the bytes against the manifest's
+ * SHA-256 before handing them over (MVP.md §5.2).
  *
  * Extension-context only. The loader returns the bundle *source*; executing it
  * is the host's decision where its CSP permits. It is deliberately not wired
@@ -8,6 +9,10 @@
  * remote code there (validated, MVP.md §5.2/§6), and MV3 ships the bundle
  * inside the extension anyway. The channel exists so a publish is picked up on
  * the next load by any host that *can* consume it.
+ *
+ * Recorded decision (PR #21): this module lives in the extension app today and
+ * migrates to a shared package with its first external consumer — apps must
+ * not import other apps (dependencies flow apps → ui → engine).
  */
 
 import { CHANNEL_MANIFEST_NAME, type ChannelManifest, parseChannelManifest } from './channel.js';
@@ -18,7 +23,9 @@ export type ChannelLoadReason =
   /** The channel host answered with a non-OK HTTP status. */
   | 'http-error'
   /** The manifest was fetched but is not a valid channel manifest. */
-  | 'manifest-invalid';
+  | 'manifest-invalid'
+  /** The bundle's bytes do not match the manifest's SHA-256 digest. */
+  | 'integrity-mismatch';
 
 /**
  * A channel-load failure tagged with a {@link ChannelLoadReason}, so callers
@@ -47,7 +54,7 @@ export interface LoadedBundle {
   readonly manifest: ChannelManifest;
   /** Absolute URL the bundle was loaded from. */
   readonly url: string;
-  /** The bundle's source text, ready for the host to execute where CSP permits. */
+  /** The verified bundle source, ready for the host to execute where CSP permits. */
   readonly source: string;
 }
 
@@ -75,30 +82,35 @@ async function fetchChannelFile(
     throw new ChannelLoadError(
       'network',
       `Network error during the channel ${step} request: ${url}`,
-      {
-        cause,
-      },
+      { cause },
     );
   }
   if (!response.ok) {
     throw new ChannelLoadError(
       'http-error',
       `Channel ${step} request failed: ${response.status} ${url}`,
-      {
-        status: response.status,
-      },
+      { status: response.status },
     );
   }
   return response;
+}
+
+async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 /**
  * Load the latest published bundle from a channel.
  *
  * The manifest request bypasses every cache (`no-store`, mirroring its
- * publish-side `Cache-Control`), so a new publish is seen immediately; the
- * bundle request uses default caching — safe because its filename is its
- * content hash and it is published immutable.
+ * publish-side `Cache-Control`), so a new publish is seen immediately. The
+ * bundle request uses default caching, and the received bytes are verified
+ * against the manifest's `sha256` — a substituted or corrupted bundle is
+ * rejected, never returned. The manifest itself is unsigned; transport
+ * integrity for it is TLS's job.
  */
 export async function loadLatestBundle(
   channelBaseUrl: string,
@@ -123,5 +135,13 @@ export async function loadLatestBundle(
 
   const bundleUrl = new URL(manifest.bundle, root).toString();
   const bundleResponse = await fetchChannelFile(doFetch, 'bundle', bundleUrl);
-  return { manifest, url: bundleUrl, source: await bundleResponse.text() };
+  const bytes = await bundleResponse.arrayBuffer();
+  const digest = await sha256Hex(bytes);
+  if (digest !== manifest.sha256) {
+    throw new ChannelLoadError(
+      'integrity-mismatch',
+      `Channel bundle failed integrity verification (expected sha256 ${manifest.sha256}, got ${digest}): ${bundleUrl}`,
+    );
+  }
+  return { manifest, url: bundleUrl, source: new TextDecoder().decode(bytes) };
 }

@@ -21,18 +21,21 @@ pnpm --filter @triage/extension build
 
 ## Update channel (BL-015)
 
-Every build emits, next to the unpacked extension:
+Every build runs a second, channel-only publish build (`vite.channel.config.ts`) that
+emits, next to the unpacked extension:
 
 ```
 dist/channel/
-  manifest.json            # { schema, version, bundle } — names the latest build
-  triage-<hash16>.js       # the bundle under (a prefix of) its SHA-256 content hash
+  manifest.json            # { schema, version, bundle, sha256 } — names the latest build
+  triage-<hash16>.js       # the channel entry under (a prefix of) its SHA-256 hash
 ```
 
-The channel version is read from `public/manifest.json` — the one version Chrome
-enforces (the panel header shows the same value via `chrome.runtime.getManifest()`).
-The published bundle is the in-memory chunk, without the `sourceMappingURL` pointer
-the local `dist/content.js` carries: sourcemaps are not part of the channel.
+The published bundle is **not** the content script: it is the host-agnostic
+`src/channel-entry.ts` (engine + UI, no `chrome.*`), exposing `globalThis.Triage`
+(`version` + `mount({ tokens })`) so a consuming host supplies its own `TokenStore`
+and attaches the panel itself. The channel version is read from
+`public/manifest.json` — the one version Chrome enforces (the panel header shows the
+same value via `chrome.runtime.getManifest()`). Sourcemaps are not part of the channel.
 
 To publish, upload `dist/channel/` to a static host with the validated cache policy
 (MVP.md §5.2, pinned as constants in `src/update-channel/channel.ts`):
@@ -43,13 +46,16 @@ To publish, upload `dist/channel/` to a static host with the validated cache pol
   the filename is its content hash).
 
 `src/update-channel/loader.ts` is the thin consumer: it reads the manifest (bypassing
-caches), then loads the hashed bundle it names.
+caches), loads the hashed bundle it names, and verifies the bytes against the
+manifest's full `sha256` before returning them (the manifest itself is unsigned —
+TLS is that layer).
 
 **Hard constraint (validated — MVP.md §5.2):** this channel is for the extension, or a
 future non-GitHub host whose CSP permits it. It is **never** wired to the github.com
 bookmarklet — GitHub's CSP (`script-src github.githubassets.com`, no `unsafe-eval`,
 `unsafe-inline`, `blob:`, or CDN) makes remote code impossible there, so the bookmarklet
-stays self-contained (BL-013). The `channel-isolation` forbidden-pattern rule enforces
-this at write time. Note MV3 also forbids remotely hosted code, so the installed
-extension itself ships the bundle and updates via the Web Store; the channel is the
-generic publish surface kept per MVP.md §5.2's resolution.
+stays self-contained (BL-013). The `channel-isolation` forbidden-pattern rule guards the
+import path at write time (any import of the channel modules from the bookmarklet app is
+blocked); the constraint itself lives in MVP.md §5.2. Note MV3 also forbids remotely
+hosted code, so the installed extension itself ships its bundle and updates via the Web
+Store; the channel serves a future permitting host, per MVP.md §5.2's resolution.
