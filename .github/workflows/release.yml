@@ -149,3 +149,79 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
+
+  # BL-019: upload the released extension zip to the Chrome Web Store and submit
+  # it for review — the store is the extension's real update path (MVP.md §5.3).
+  # Gated on the CWS_EXTENSION_ID repo VARIABLE (same dormancy pattern as Sonar's
+  # SONAR_ORGANIZATION: secrets are not readable in a job-level `if`), so the job
+  # skips cleanly until the one-time Web Store bootstrap is done: developer
+  # account, first manual listing, OAuth client + refresh token, then set the
+  # CWS_EXTENSION_ID variable and CWS_CLIENT_ID / CWS_CLIENT_SECRET /
+  # CWS_REFRESH_TOKEN secrets. Publishes the exact zip attached to the GitHub
+  # Release — never a separate rebuild. The job's contract ends at "submitted";
+  # store review latency is external.
+  webstore:
+    name: Publish extension to Chrome Web Store
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: release
+    if: ${{ vars.CWS_EXTENSION_ID != '' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Download the released extension zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --pattern "triage-extension-*.zip" --output extension.zip
+
+      - name: Upload & submit for review
+        env:
+          CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          set -euo pipefail
+          for v in CWS_CLIENT_ID CWS_CLIENT_SECRET CWS_REFRESH_TOKEN; do
+            if [ -z "${!v:-}" ]; then
+              echo "::error::$v is not set, but CWS_EXTENSION_ID is configured so publishing was expected. Add the secret or unset the variable."
+              exit 1
+            fi
+          done
+
+          TOKEN=$(curl -s https://oauth2.googleapis.com/token \
+            -d client_id="$CWS_CLIENT_ID" \
+            -d client_secret="$CWS_CLIENT_SECRET" \
+            -d refresh_token="$CWS_REFRESH_TOKEN" \
+            -d grant_type=refresh_token | jq -r '.access_token // empty')
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Could not obtain a Chrome Web Store access token (check the CWS_* credentials)."
+            exit 1
+          fi
+
+          UPLOAD=$(curl -s -X PUT \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${CWS_EXTENSION_ID}" \
+            -H "Authorization: Bearer $TOKEN" -H "x-goog-api-version: 2" \
+            -T extension.zip)
+          echo "upload response: $UPLOAD"
+          if [ "$(echo "$UPLOAD" | jq -r '.uploadState // empty')" != "SUCCESS" ]; then
+            echo "::error::Chrome Web Store upload failed — response above names the store's reason."
+            exit 1
+          fi
+
+          PUBLISH=$(curl -s -X POST \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/${CWS_EXTENSION_ID}/publish" \
+            -H "Authorization: Bearer $TOKEN" -H "x-goog-api-version: 2" \
+            -H "Content-Length: 0")
+          echo "publish response: $PUBLISH"
+          STATUS=$(echo "$PUBLISH" | jq -r '.status[0] // empty')
+          case "$STATUS" in
+            OK|ITEM_PENDING_REVIEW) echo "Submitted for review (status: $STATUS)." ;;
+            *)
+              echo "::error::Chrome Web Store publish failed — response above names the store's reason."
+              exit 1
+              ;;
+          esac
