@@ -66,6 +66,12 @@ concentrate, and away from where they don't — without ever hiding the differen
 - Not a replacement for GitHub, and not a multi-tool dashboard.
 - Not a reviewer-metrics or team-analytics product.
 
+These non-goals bind **Triage, the review plugin**. The repo also hosts a sibling
+product — the **Control Room**, a fleet cockpit for coding agents — governed by its own
+[`CONTROL-ROOM-CONSTITUTION.md`](./CONTROL-ROOM-CONSTITUTION.md), whose hard line
+("measure machines and harnesses, never people") is what keeps it from becoming the
+dashboard/analytics product forsworn above. Nothing in this file is weakened by it.
+
 ## A note on the autoreview action (a bounded carve-out)
 
 The repo also ships an **opt-in GitHub Action** (BL-016) that auto-approves a pull
