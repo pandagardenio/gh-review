@@ -74,3 +74,18 @@ pnpm dev            # turbo: watch builds
   [`apps/extension/README.md`](./apps/extension/README.md)).
 - The bookmarklet packaging (**BL-013**) emits `dist/bookmarklet.txt` (the
   self-contained `javascript:` URL) and `dist/install.html`.
+
+## Releasing
+
+Releases are fully automatic (**BL-017**, `.github/workflows/release.yml`): the only
+manual action is tagging.
+
+1. Bump `version` in `apps/extension/public/manifest.json` — the single version source
+   — and land that on `main`.
+2. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z` (the tag must match the
+   manifest version; a mismatch fails the release before anything publishes).
+
+The workflow re-runs the full quality gate, then publishes a GitHub Release with the
+extension zip (channel excluded), the bookmarklet `install.html` + `bookmarklet.txt`,
+and the update-channel pair. Per-surface deploys (Pages, Web Store, update channel —
+BL-018/019/020) chain off this workflow as they land.

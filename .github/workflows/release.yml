@@ -1,0 +1,93 @@
+# Release (BL-017): pushing a version tag is the ONLY release action — everything
+# downstream is automatic. The tag must match apps/extension/public/manifest.json
+# (the single version source), the full quality gate must pass, and the built
+# artifacts are attached to a GitHub Release. Per-surface deploys (BL-018 Pages,
+# BL-019 Web Store, BL-020 update channel) chain off this workflow as later jobs.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  release:
+    name: Gate, package & publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Fail loudly BEFORE building anything: a tag that does not match the
+      # manifest version must never publish a half-versioned release.
+      - name: Verify tag matches public/manifest.json
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          MANIFEST_VERSION=$(jq -r .version apps/extension/public/manifest.json)
+          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} (version ${TAG_VERSION}) does not match apps/extension/public/manifest.json (version ${MANIFEST_VERSION}). Bump the manifest (the single version source) and re-tag."
+            exit 1
+          fi
+          echo "Releasing version ${MANIFEST_VERSION}"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # A release never skips the gate — same four commands as CI's verify job.
+      - name: Lint & format check (Biome)
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      # Four artifact groups: extension zip (without the channel — that is not
+      # part of the extension package), the bookmarklet install page + URL, and
+      # the channel pair zipped so the manifest/bundle pairing stays intact.
+      - name: Package release artifacts
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          STAGING="$GITHUB_WORKSPACE/dist-release"
+          mkdir -p "$STAGING"
+
+          (cd apps/extension/dist && zip -r "$STAGING/triage-extension-v${VERSION}.zip" . -x "channel/*")
+          (cd apps/extension/dist/channel && zip -r "$STAGING/triage-channel-v${VERSION}.zip" .)
+          cp apps/bookmarklet/dist/install.html "$STAGING/install.html"
+          cp apps/bookmarklet/dist/bookmarklet.txt "$STAGING/bookmarklet.txt"
+
+          ls -l "$STAGING"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Triage $GITHUB_REF_NAME" \
+            --generate-notes \
+            "dist-release/triage-extension-${GITHUB_REF_NAME}.zip" \
+            "dist-release/triage-channel-${GITHUB_REF_NAME}.zip" \
+            "dist-release/install.html" \
+            "dist-release/bookmarklet.txt"
