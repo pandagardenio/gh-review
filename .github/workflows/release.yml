@@ -91,3 +91,61 @@ jobs:
             "dist-release/triage-channel-${GITHUB_REF_NAME}.zip" \
             "dist-release/install.html" \
             "dist-release/bookmarklet.txt"
+
+  # BL-018: publish the bookmarklet install page to GitHub Pages on every
+  # release, so one canonical URL always serves the latest build — re-installing
+  # from that page IS the bookmarklet's update story (MVP.md §5.1). The page is
+  # fully self-contained (BL-013); this is never a remote loader for github.com
+  # (MVP.md §5.2). Runs only after the release job's version guard + gate passed.
+  pages:
+    name: Deploy bookmarklet install page (Pages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: release
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build bookmarklet
+        run: pnpm --filter @triage/bookmarklet build
+
+      # The install page becomes the site root; bookmarklet.txt rides along for
+      # anyone who wants the raw javascript: URL.
+      - name: Stage Pages site
+        run: |
+          set -euo pipefail
+          mkdir -p pages-site
+          cp apps/bookmarklet/dist/install.html pages-site/index.html
+          cp apps/bookmarklet/dist/bookmarklet.txt pages-site/bookmarklet.txt
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

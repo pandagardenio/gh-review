@@ -87,5 +87,11 @@ manual action is tagging.
 
 The workflow re-runs the full quality gate, then publishes a GitHub Release with the
 extension zip (channel excluded), the bookmarklet `install.html` + `bookmarklet.txt`,
-and the update-channel pair. Per-surface deploys (Pages, Web Store, update channel —
-BL-018/019/020) chain off this workflow as they land.
+and the update-channel pair. It then deploys the bookmarklet install page to GitHub
+Pages (**BL-018**) — the canonical install URL always serves the latest release, and
+re-installing from it is how the bookmarklet updates. Remaining per-surface deploys
+(Web Store, update channel — BL-019/020) chain off this workflow as they land.
+
+The Pages job self-enables GitHub Pages on first run (`configure-pages` with
+`enablement: true`); if the repo restricts that, set Pages → Source → GitHub Actions
+once in the repo settings.
