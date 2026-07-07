@@ -60,6 +60,56 @@ describe('GitHubClient.getPaged', () => {
     expect(secondHeaders['If-None-Match']).toBe('W/"v1"');
   });
 
+  it('does not cache a multi-page resource (a page-1 ETag cannot vouch for later pages)', async () => {
+    const cache = new InMemoryConditionalCache();
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        res([{ a: 1 }], {
+          headers: { ETag: 'W/"v1"', Link: '<https://api.github.com/x?page=2>; rel="next"' },
+        }),
+      )
+      .mockResolvedValueOnce(res([{ a: 2 }]));
+    await setup(fetch as unknown as typeof globalThis.fetch, cache).getPaged('/x');
+    expect(cache.get('https://api.github.com/x')).toBeUndefined();
+  });
+
+  it('does not carry the If-None-Match header onto pages 2..N', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        res([{ a: 1 }], {
+          headers: { ETag: 'W/"v1"', Link: '<https://api.github.com/x?page=2>; rel="next"' },
+        }),
+      )
+      .mockResolvedValueOnce(res([{ a: 2 }]));
+    const cache = new InMemoryConditionalCache();
+    cache.set('https://api.github.com/x', { etag: 'W/"prev"', body: '[]' });
+    await setup(fetch as unknown as typeof globalThis.fetch, cache).getPaged('/x');
+    const pageTwoHeaders = (fetch.mock.calls[1]?.[1] as RequestInit).headers as Record<
+      string,
+      string
+    >;
+    expect(pageTwoHeaders['If-None-Match']).toBeUndefined();
+  });
+
+  it('stops paginating when stopWhen returns true', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        res([{ n: 1 }], { headers: { Link: '<https://api.github.com/x?page=2>; rel="next"' } }),
+      )
+      .mockResolvedValueOnce(res([{ n: 2 }]));
+    const data = await setup(fetch as unknown as typeof globalThis.fetch).getPaged<{ n: number }>(
+      '/x',
+      {
+        stopWhen: (page) => page.some((item) => item.n === 1),
+      },
+    );
+    expect(data).toEqual([{ n: 1 }]); // stopped after page 1, page 2 never fetched
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('classifies HTTP failures into plain error kinds', async () => {
     const kinds = [
       { status: 401, headers: {}, kind: 'unauthorized' },

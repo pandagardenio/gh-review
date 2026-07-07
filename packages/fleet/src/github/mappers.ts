@@ -61,6 +61,9 @@ const CHECK_CONCLUSIONS: Record<string, CheckConclusion> = {
   cancelled: 'cancelled',
   timed_out: 'timed_out',
   action_required: 'action_required',
+  skipped: 'neutral', // deliberately skipped — not a failure, not a green signal
+  stale: 'failure', // result no longer trustworthy — do not count as passing
+  startup_failure: 'failure', // the workflow never started — a genuine failure
 };
 
 export function mapCommit(repo: string, raw: RawCommit): CommitRecord {
@@ -111,8 +114,10 @@ export function mapReviewStates(raws: readonly RawReview[]): ReviewState[] {
 }
 
 export function mapCheckRun(repo: string, headSha: string, raw: RawCheckRun): CheckRecord {
+  // An unrecognized *completed* conclusion maps to `failure`, never `neutral`:
+  // downstream scores `neutral` as green, so an unknown must not silently pass.
   const conclusion: CheckConclusion =
-    raw.status !== 'completed' ? 'pending' : (CHECK_CONCLUSIONS[raw.conclusion ?? ''] ?? 'neutral');
+    raw.status !== 'completed' ? 'pending' : (CHECK_CONCLUSIONS[raw.conclusion ?? ''] ?? 'failure');
   return {
     repo,
     headSha,

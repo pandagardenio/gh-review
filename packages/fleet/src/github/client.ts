@@ -40,6 +40,15 @@ export interface GitHubClientOptions {
   readonly cache?: ConditionalCache;
 }
 
+export interface GetPagedOptions<T> {
+  /**
+   * Called with each fetched page; return true to stop paginating. Lets a caller
+   * bound a sorted resource to a window (e.g. stop once past the window's start)
+   * instead of pulling every page and filtering after.
+   */
+  readonly stopWhen?: (page: T[]) => boolean;
+}
+
 export class GitHubClient {
   readonly #tokens: TokenStore;
   readonly #fetch: typeof globalThis.fetch;
@@ -58,27 +67,39 @@ export class GitHubClient {
    * (`If-None-Match` from the cache) short-circuits to the cached assembly on 304.
    * Throws a {@link GitHubApiError} classified by cause; never a hot retry loop.
    */
-  async getPaged<T>(path: string): Promise<T[]> {
+  async getPaged<T>(path: string, options: GetPagedOptions<T> = {}): Promise<T[]> {
     const url = `${this.#apiBase}${path}`;
-    const headers = await this.#headers();
+    const firstHeaders = await this.#headers();
     const cached = await this.#cache.get(url);
-    if (cached) headers['If-None-Match'] = cached.etag;
+    if (cached) firstHeaders['If-None-Match'] = cached.etag;
 
-    const response = await this.#send(url, headers);
+    const response = await this.#send(url, firstHeaders);
     if (response.status === 304 && cached) return JSON.parse(cached.body) as T[];
     throwIfError(response);
 
-    const collected = (await parseJson<T[]>(response)).slice();
+    const firstPage = await parseJson<T[]>(response);
+    const collected = firstPage.slice();
     let next = nextLink(response.headers.get('Link'));
-    for (let page = 1; next && page < MAX_PAGES; page++) {
-      const pageResponse = await this.#send(next, headers);
+    const multiPage = next !== null;
+
+    // Pages 2..N must NOT carry page 1's ETag, or a coincidental match could 304 a
+    // later page out of the assembly.
+    const pageHeaders = { ...firstHeaders };
+    delete pageHeaders['If-None-Match'];
+    let stopped = options.stopWhen?.(firstPage) ?? false;
+    for (let page = 1; next && !stopped && page < MAX_PAGES; page++) {
+      const pageResponse = await this.#send(next, pageHeaders);
       throwIfError(pageResponse);
-      collected.push(...(await parseJson<T[]>(pageResponse)));
+      const items = await parseJson<T[]>(pageResponse);
+      collected.push(...items);
       next = nextLink(pageResponse.headers.get('Link'));
+      stopped = options.stopWhen?.(items) ?? false;
     }
 
+    // Only single-page resources are cached: a page-1 ETag can't vouch that later
+    // pages are unchanged, so a 304 on it must never stand in for the whole assembly.
     const etag = response.headers.get('ETag');
-    if (etag) await this.#cache.set(url, { etag, body: JSON.stringify(collected) });
+    if (etag && !multiPage) await this.#cache.set(url, { etag, body: JSON.stringify(collected) });
     return collected;
   }
 

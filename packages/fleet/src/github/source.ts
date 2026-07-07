@@ -93,8 +93,17 @@ export class GitHubFleetSource implements FleetSource {
   }
 
   async listPulls(repo: string): Promise<PullRecord[]> {
+    const since = Date.parse(this.#window.since);
+    // Sorted created-desc, so once a page's oldest PR predates the window, every
+    // later page does too — stop, rather than pull the repo's whole PR history.
     const raw = await this.#client.getPaged<RawPull>(
       `/repos/${repo}/pulls?state=all&sort=created&direction=desc&per_page=100`,
+      {
+        stopWhen: (page) => {
+          const oldest = page.at(-1);
+          return oldest ? Date.parse(oldest.created_at) < since : false;
+        },
+      },
     );
     const inWindowPulls = raw.filter((pull) => inWindow(pull.created_at, this.#window));
     const out: PullRecord[] = [];
