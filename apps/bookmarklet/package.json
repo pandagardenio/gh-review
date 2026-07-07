@@ -1,6 +1,6 @@
 {
   "name": "@triage/bookmarklet",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Self-contained javascript: bookmarklet entry shell — inlines @triage/engine + @triage/ui (BL-013).",
   "private": true,
   "type": "module",
