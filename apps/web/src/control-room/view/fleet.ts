@@ -30,11 +30,22 @@ function scoreKind(score: number | null): BadgeKind {
   return 'ok';
 }
 
+/**
+ * Colour the health badge by score — but a partial/unknown tier must never read
+ * as a confident green: its score is incomplete, so a would-be-green is muted
+ * instead (an actionable red/yellow still surfaces). Honest tiering over a
+ * flattering colour (CONTROL-ROOM-CONSTITUTION.md principle 2).
+ */
+function healthKind(row: FleetRow): BadgeKind {
+  const kind = scoreKind(row.score);
+  return row.status !== 'full' && kind === 'ok' ? 'muted' : kind;
+}
+
 function healthCell(row: FleetRow): HTMLElement {
   if (!row.ok) return badge('error', 'danger');
   const label =
     row.status === 'full' ? formatScore(row.score) : `${formatScore(row.score)} · ${row.status}`;
-  const children: (Node | string)[] = [badge(label, scoreKind(row.score))];
+  const children: (Node | string)[] = [badge(label, healthKind(row))];
   if (row.grade) children.push(el('span', { class: 'cr-fleet__grade', text: row.grade }));
   return el('div', { class: 'cr-fleet__health', children });
 }

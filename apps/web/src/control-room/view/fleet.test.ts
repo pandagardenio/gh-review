@@ -47,4 +47,16 @@ describe('mountFleet', () => {
     expect(foot).toMatch(/repos fresh/);
     expect(foot).toMatch(/sessions/);
   });
+
+  it('never paints a partial/unknown-tier repo a confident green', async () => {
+    const root = document.createElement('div');
+    await mountFleet(root, demoContext(), NOW_MS, () => {});
+    for (const row of root.querySelectorAll('.cr-fleet__row')) {
+      const health = row.querySelector('.cr-fleet__health');
+      const label = health?.textContent ?? '';
+      if (label.includes('partial') || label.includes('unknown')) {
+        expect(health?.querySelector('.cr-badge--ok')).toBeNull();
+      }
+    }
+  });
 });
