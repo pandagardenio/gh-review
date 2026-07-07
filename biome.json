@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/coverage", "!**/.turbo"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/coverage",
+      "!**/.turbo",
+      "!apps/extension/public/manifest.json"
+    ]
   },
   "formatter": {
     "enabled": true,
