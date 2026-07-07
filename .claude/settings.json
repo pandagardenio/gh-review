@@ -26,8 +26,11 @@
       "Bash(pnpm exec lint-staged)",
       "Bash(pnpm --filter * build)",
       "Bash(pnpm --filter * test)",
+      "Bash(pnpm --filter * test *)",
       "Bash(pnpm --filter * typecheck)",
+      "Bash(pnpm --filter * typecheck *)",
       "Bash(pnpm --filter * lint)",
+      "Bash(pnpm --filter * lint *)",
       "Bash(pnpm --filter * run test:coverage)",
       "Bash(pnpm --version)",
       "Bash(node --version)",
@@ -39,7 +42,9 @@
       "Bash(tail:*)",
       "Bash(wc:*)",
       "Bash(echo:*)",
-      "Bash(du:*)"
+      "Bash(du:*)",
+      "mcp__github__pull_request_read",
+      "mcp__github__list_pull_requests"
     ]
   },
   "hooks": {
