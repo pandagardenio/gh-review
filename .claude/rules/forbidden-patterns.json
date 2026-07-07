@@ -17,6 +17,13 @@
       "message": "The engine is provider- and UI-agnostic: it must not import UI or app code. Dependencies flow apps → ui → engine only (rule: engine-isolation). Browser globals are already rejected by the engine's tsconfig (no DOM/chrome libs). See CLAUDE.md."
     },
     {
+      "id": "fleet-isolation",
+      "type": "content-forbidden",
+      "pathRegex": ".*/packages/fleet/src/.*\\.ts$",
+      "regex": "from\\s+['\"](@triage/(ui|extension|web)|.*\\.css)['\"]",
+      "message": "The fleet core is provider- and UI-agnostic: it must not import UI or app code. Dependencies flow apps → fleet/ui → engine only (rule: fleet-isolation). Browser globals are already rejected by the fleet tsconfig (no DOM/chrome libs). See CONTROL-ROOM-CONSTITUTION.md."
+    },
+    {
       "id": "channel-isolation",
       "type": "content-forbidden",
       "pathRegex": ".*/apps/bookmarklet/.*\\.ts$",
