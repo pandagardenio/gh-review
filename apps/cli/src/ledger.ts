@@ -27,29 +27,44 @@ export interface AppendResult {
   readonly pushed: boolean;
 }
 
+const MAX_ATTEMPTS = 5;
+
 export function appendRecord(entry: LedgerEntry, options: AppendOptions): AppendResult {
   const { cwd } = options;
   const remote = options.remote === undefined ? 'origin' : options.remote;
+  const line = serializeLedgerLine(entry);
 
-  let parent = gitRev(cwd, LEDGER_REF);
-  let base = parent ? blobAt(cwd, `${LEDGER_REF}:${LEDGER_FILE}`) : '';
+  // Read → build → compare-and-swap the ref, retrying if another local emit (a
+  // concurrent session) moved it in between. Without the expected-old-value on
+  // update-ref, a racing append would silently orphan our record.
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const localRef = gitRev(cwd, LEDGER_REF);
+    let parent = localRef;
+    let base = localRef ? blobAt(cwd, `${LEDGER_REF}:${LEDGER_FILE}`) : '';
 
-  if (remote && gitMaybe(['fetch', '--quiet', remote, LEDGER_REF], { cwd }) !== null) {
-    const remoteTip = gitRev(cwd, 'FETCH_HEAD');
-    if (remoteTip && remoteTip !== parent) {
-      parent = remoteTip;
-      base = mergeAppendOnly(blobAt(cwd, `${remoteTip}:${LEDGER_FILE}`), base);
+    if (remote && gitMaybe(['fetch', '--quiet', remote, LEDGER_REF], { cwd }) !== null) {
+      const remoteTip = gitRev(cwd, 'FETCH_HEAD');
+      if (remoteTip && remoteTip !== parent) {
+        parent = remoteTip;
+        base = mergeAppendOnly(blobAt(cwd, `${remoteTip}:${LEDGER_FILE}`), base);
+      }
     }
+
+    const commit = writeCommit(cwd, parent, `${base}${line}\n`);
+    if (!updateRefCas(cwd, commit, localRef)) continue; // ref moved or is locked — retry
+
+    const pushed =
+      remote !== null &&
+      gitMaybe(['push', '--quiet', remote, `${LEDGER_REF}:${LEDGER_REF}`], { cwd }) !== null;
+    return { commit, pushed };
   }
+  throw new Error(`ledger: could not update ${LEDGER_REF} after ${MAX_ATTEMPTS} attempts`);
+}
 
-  const content = `${base}${serializeLedgerLine(entry)}\n`;
-  const commit = writeCommit(cwd, parent, content);
-  git(['update-ref', LEDGER_REF, commit], { cwd });
-
-  const pushed =
-    remote !== null &&
-    gitMaybe(['push', '--quiet', remote, `${LEDGER_REF}:${LEDGER_REF}`], { cwd }) !== null;
-  return { commit, pushed };
+/** Compare-and-swap the ledger ref: succeed only if it still equals `oldValue`. */
+function updateRefCas(cwd: string, newValue: string, oldValue: string | null): boolean {
+  // An empty old value tells git the ref must not currently exist (first write).
+  return gitMaybe(['update-ref', LEDGER_REF, newValue, oldValue ?? ''], { cwd }) !== null;
 }
 
 function writeCommit(cwd: string, parent: string | null, content: string): string {

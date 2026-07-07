@@ -53,24 +53,31 @@ export function emit(kind: EmitKind, options: EmitOptions): EmitResult {
     return { emitted: false, reason: 'hook-event requires --hook and --outcome' };
   }
 
-  const ctx: EmitContext = {
-    repo: deriveRepo(options.cwd),
-    sessionId: options.sessionId,
-    branch: currentBranch(options.cwd),
-    nowIso: options.nowIso ?? new Date(nowMs).toISOString(),
-  };
+  // Everything below can touch git/fs. Contain any failure into a result — an
+  // emitter hiccup (a locked ref, a full disk, a git error) must never throw and
+  // break the caller's session (BL-026 acceptance).
+  try {
+    const ctx: EmitContext = {
+      repo: deriveRepo(options.cwd),
+      sessionId: options.sessionId,
+      branch: currentBranch(options.cwd),
+      nowIso: options.nowIso ?? new Date(nowMs).toISOString(),
+    };
 
-  const entry: LedgerEntry =
-    kind === 'hook-event'
-      ? { type: 'hook', record: buildHookEvent(ctx, options.hook as HookFields) }
-      : {
-          type: 'session',
-          record: buildSession(kind, ctx, sessionFields(kind, stateDir, ctx, options.session)),
-        };
+    const entry: LedgerEntry =
+      kind === 'hook-event'
+        ? { type: 'hook', record: buildHookEvent(ctx, options.hook as HookFields) }
+        : {
+            type: 'session',
+            record: buildSession(kind, ctx, sessionFields(kind, stateDir, ctx, options.session)),
+          };
 
-  appendRecord(entry, { cwd: options.cwd, remote: options.remote });
-  if (kind === 'heartbeat') stamp(stateDir, `heartbeat-${options.sessionId}`, String(nowMs));
-  return { emitted: true };
+    appendRecord(entry, { cwd: options.cwd, remote: options.remote });
+    if (kind === 'heartbeat') stamp(stateDir, `heartbeat-${options.sessionId}`, String(nowMs));
+    return { emitted: true };
+  } catch (error) {
+    return { emitted: false, reason: error instanceof Error ? error.message : 'emit failed' };
+  }
 }
 
 /** Stash the real start time at session-start; reuse it on heartbeat/end snapshots. */
@@ -101,6 +108,10 @@ function stamp(stateDir: string, name: string, value: string): void {
 }
 
 function read(stateDir: string, name: string): string | null {
-  const path = join(stateDir, name);
-  return existsSync(path) ? readFileSync(path, 'utf8').trim() : null;
+  try {
+    const path = join(stateDir, name);
+    return existsSync(path) ? readFileSync(path, 'utf8').trim() : null;
+  } catch {
+    return null;
+  }
 }

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { SessionRecord } from '@triage/fleet';
@@ -104,5 +104,19 @@ describe('emit', () => {
     const dir = mkdtempSync(join(tmpdir(), 'triage-nogit-'));
     dirs.push(dir);
     expect(emit('session-start', { cwd: dir, sessionId: 's', remote: null }).emitted).toBe(false);
+  });
+
+  it('never throws on a git failure — a locked ledger ref returns a failure result', () => {
+    const repo = initRepo();
+    // Pre-create the ref lock so every update-ref attempt fails, as under contention.
+    mkdirSync(join(repo, '.git', 'refs', 'heads', 'triage'), { recursive: true });
+    writeFileSync(join(repo, '.git', 'refs', 'heads', 'triage', 'ledger.lock'), '');
+
+    let result: ReturnType<typeof emit> | undefined;
+    expect(() => {
+      result = emit('session-start', { cwd: repo, sessionId: 's', remote: null });
+    }).not.toThrow();
+    expect(result?.emitted).toBe(false);
+    expect(run(repo, 'status', '--porcelain')).toBe(''); // session/working tree unharmed
   });
 });
