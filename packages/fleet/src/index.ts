@@ -32,5 +32,26 @@ export type {
   SessionStatus,
   SessionUsage,
 } from './model/session.js';
+export type {
+  AgentIdentityConfig,
+  AgentSignal,
+  Provenance,
+  ProvenanceClass,
+} from './provenance/agent-identity.js';
+export {
+  classifyCommit,
+  classifyPull,
+  coAuthorTrailers,
+  DEFAULT_AGENT_IDENTITY,
+} from './provenance/agent-identity.js';
+export type { AgentProvenance, ProvenanceShare, ProvenanceWindow } from './provenance/share.js';
+export {
+  inWindow,
+  provenanceByRepo,
+  provenanceShare,
+  windowEndingAt,
+} from './provenance/share.js';
+export type { ProvenanceTrendPoint, TrendBucket } from './provenance/trend.js';
+export { provenanceTrend } from './provenance/trend.js';
 export { FLEET_VERSION, fleetSmoke } from './smoke.js';
 export type { FleetSource } from './source.js';
