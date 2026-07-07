@@ -400,3 +400,77 @@ body {
 .cr-link--right {
   margin-left: auto;
 }
+
+/* Fleet grid (BL-029) */
+.cr-fleet {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.cr-fleet__row {
+  display: grid;
+  grid-template-columns: minmax(160px, 2fr) 1.4fr 1fr 1fr 0.8fr;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.cr-fleet__row:first-child {
+  border-top: none;
+}
+
+.cr-fleet__row--head {
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cr-fleet__row--error {
+  grid-template-columns: minmax(160px, 2fr) 1.4fr auto;
+}
+
+.cr-fleet__cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.cr-fleet__repo {
+  background: none;
+  border: none;
+  color: var(--info);
+  font: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cr-fleet__repo:hover {
+  text-decoration: underline;
+}
+
+.cr-fleet__health {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cr-fleet__grade {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.cr-fleet__err {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.cr-fleet__foot {
+  margin: 12px 2px 0;
+  color: var(--muted);
+  font-size: 13px;
+}

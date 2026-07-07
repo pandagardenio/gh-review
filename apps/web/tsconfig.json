@@ -8,5 +8,9 @@
   },
   "include": ["src", "vite.config.ts"],
   "exclude": ["dist", "node_modules"],
-  "references": [{ "path": "../../packages/engine" }, { "path": "../../packages/ui" }]
+  "references": [
+    { "path": "../../packages/engine" },
+    { "path": "../../packages/fleet" },
+    { "path": "../../packages/ui" }
+  ]
 }

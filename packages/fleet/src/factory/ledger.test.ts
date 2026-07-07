@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clusterFailures, summarize } from './ledger.js';
-import type { RunRecord, RunStatus, Station } from './source.js';
+import type { RunRecord, RunStatus, Station } from './model.js';
 
 function run(
   station: Station,

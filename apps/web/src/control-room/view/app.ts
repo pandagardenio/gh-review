@@ -5,8 +5,8 @@
  * {@link mountControlRoom} wires the two together with loading/error states.
  */
 
+import { type LedgerSummary, summarize } from '@triage/fleet';
 import { el } from '@triage/ui';
-import { type LedgerSummary, summarize } from '../ledger.js';
 import type { FactorySource, PolicySummary, ReviewItem, WorkItem } from '../source.js';
 import { badge, externalLink } from './components.js';
 import { configurePane } from './configure.js';
