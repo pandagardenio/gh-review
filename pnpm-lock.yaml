@@ -87,6 +87,8 @@ importers:
 
   packages/engine: {}
 
+  packages/fleet: {}
+
   packages/ui:
     dependencies:
       '@triage/engine':
