@@ -35,11 +35,12 @@ the Control Room, principles 1 (never people) and 5 (observation is not control)
   split is the realized structure — keep to it.
 - The original bookmarklet prototype that served as M1's behavioural reference has been
   superseded by `apps/bookmarklet`, which bundles the same engine + UI as the extension.
-- **The Control Room is specced, not built** (BL-021–BL-029, milestones CR1–CR3): a
-  `@triage/fleet` core (session-ledger schema, provenance/CI/harness-health metrics),
-  a tiered GitHub-baseline + ledger data plane, and two cockpit surfaces — a CLI
-  (`apps/cli`, emitter + TUI) and the fleet web app. A single-repo prototype lives in
-  `apps/web/src/control-room` and gets generalized by BL-029.
+- **The Control Room backlog is fully built** (BL-021–BL-029, milestones CR1–CR3): the
+  `@triage/fleet` core (session-ledger schema, provenance/CI/harness-health metrics,
+  factory ledger roll-up + compat), a tiered GitHub-baseline + ledger data plane, and
+  two cockpit surfaces — a CLI (`apps/cli`, emitter + `triage fleet|sessions|repo` TUI)
+  and the web fleet cockpit (`apps/web`: fleet overview page + factory repo drill-down,
+  reading the same `@triage/fleet` view-models as the CLI).
 - New work should start from the relevant acceptance criteria (MVP.md or the CR backlog
   items) and land as new backlog items.
 
@@ -53,8 +54,11 @@ packages/engine/   @triage/engine — provider- & UI-agnostic core (diff model, 
                    categorization, TokenStore contract). Runs from bookmarklet AND extension.
 packages/ui/       @triage/ui — CSP-safe DOM helpers (createElement + CSSOM + addEventListener).
 apps/extension/    @triage/extension — Chrome MV3 entry shell (bundles engine + ui).
-apps/web/          @triage/web — Control Room web cockpit (single-repo prototype today;
-                   fleet view lands with BL-029).
+apps/web/          @triage/web — Control Room web cockpit: fleet overview page (default)
+                   + single-repo factory drill-down, over @triage/fleet's TieredFleetSource.
+apps/cli/          @triage/cli — ledger emitter + cockpit TUI (triage fleet|sessions|repo).
+packages/fleet/    @triage/fleet — provider- & UI-agnostic Control Room core (same isolation
+                   discipline as the engine): metrics, tiered sources, cockpit view-models.
 ```
 
 Planned by the Control Room stream (BL-021, BL-026): `packages/fleet` (`@triage/fleet`,

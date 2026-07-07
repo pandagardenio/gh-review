@@ -1,0 +1,24 @@
+{
+  "name": "@triage/cli",
+  "version": "0.0.0",
+  "description": "Control Room CLI: the ledger emitter (rich-tier writer) and, later, the cockpit TUI.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "triage": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@triage/fleet": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}

@@ -1,13 +1,14 @@
 /**
- * Ledger roll-ups — the Observe pane's arithmetic, ported from the factory's
+ * Factory ledger roll-ups (BL-029, moved from the web prototype's `ledger.ts`) —
+ * the Observe pane's arithmetic, originally ported from the factory's
  * `scripts/factory/metrics.sh` and `failures.sh`.
  *
  * Pure functions over {@link RunRecord}s: no DOM, no network. Terminal stats
  * exclude `running` Runs; token fields may be null and are simply skipped.
  */
 
-import type { RunRecord, RunStatus, Station } from './source.js';
-import { STATION_ORDER } from './source.js';
+import type { RunRecord, RunStatus, Station } from './model.js';
+import { STATION_ORDER } from './model.js';
 
 const TERMINAL: readonly RunStatus[] = ['success', 'failure', 'escalated'];
 

@@ -4,9 +4,14 @@
  * (ledger arithmetic) plus the in-flight {@link WorkItem}s.
  */
 
+import {
+  formatCount,
+  formatDuration,
+  formatPercent,
+  type LedgerSummary,
+  type StationStat,
+} from '@triage/fleet';
 import { el } from '@triage/ui';
-import { formatCount, formatDuration, formatPercent } from '../format.js';
-import type { LedgerSummary, StationStat } from '../ledger.js';
 import type { Stage, WorkItem } from '../source.js';
 import { type BadgeKind, badge, ratioBar, section, statCard } from './components.js';
 

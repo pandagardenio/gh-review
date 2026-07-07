@@ -1,5 +1,5 @@
 {
   "apps/extension": "1.0.0",
   "apps/bookmarklet": "0.0.0",
-  "apps/action": "0.0.0"
+  "apps/action": "1.0.0"
 }
