@@ -8,6 +8,24 @@
  */
 
 export { FixtureFleetSource } from './fixture-source.js';
+export type {
+  ComponentKey,
+  HarnessGrade,
+  HarnessHealth,
+  HarnessInput,
+  HarnessStatus,
+  HarnessTier,
+  HealthComponent,
+  RepoHarness,
+} from './harness/harness-health.js';
+export {
+  HARNESS_WEIGHTS,
+  harnessHealth,
+  harnessHealthComponents,
+  MIN_COMPONENTS,
+  rankByHarnessHealth,
+  scoreComponents,
+} from './harness/harness-health.js';
 export type { LedgerEntry } from './ledger/schema.js';
 export {
   LEDGER_SCHEMA_VERSION,
