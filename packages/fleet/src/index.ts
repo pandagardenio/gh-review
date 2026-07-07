@@ -8,6 +8,16 @@
  */
 
 export { FixtureFleetSource } from './fixture-source.js';
+export type { CachedResponse, ConditionalCache } from './github/cache.js';
+export { InMemoryConditionalCache } from './github/cache.js';
+export type { GitHubClientOptions, GitHubErrorKind } from './github/client.js';
+export { GitHubApiError, GitHubClient } from './github/client.js';
+export type {
+  FleetRefresh,
+  GitHubFleetSourceOptions,
+  RepoLoad,
+} from './github/source.js';
+export { GitHubFleetSource } from './github/source.js';
 export type {
   ComponentKey,
   HarnessGrade,

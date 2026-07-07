@@ -16,6 +16,9 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "@triage/engine": "workspace:*"
+  },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
     "dev": "vite build --watch",
