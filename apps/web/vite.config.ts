@@ -12,6 +12,7 @@ export default defineConfig({
     alias: {
       '@triage/ui': resolve(__dirname, '../../packages/ui/src/index.ts'),
       '@triage/engine': resolve(__dirname, '../../packages/engine/src/index.ts'),
+      '@triage/fleet': resolve(__dirname, '../../packages/fleet/src/index.ts'),
     },
   },
   build: {

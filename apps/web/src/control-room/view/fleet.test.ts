@@ -1,6 +1,12 @@
-import { FixtureFleetSource, windowEndingAt } from '@triage/fleet';
+import {
+  FixtureFleetSource,
+  type FleetRow,
+  type FleetSource,
+  type FleetView,
+  windowEndingAt,
+} from '@triage/fleet';
 import { describe, expect, it, vi } from 'vitest';
-import { mountFleet } from './fleet.js';
+import { buildFleetPage, mountFleet } from './fleet.js';
 
 const NOW_ISO = '2026-06-26T12:20:00.000Z';
 const NOW_MS = Date.parse(NOW_ISO);
@@ -58,5 +64,50 @@ describe('mountFleet', () => {
         expect(health?.querySelector('.cr-badge--ok')).toBeNull();
       }
     }
+  });
+
+  it('renders an error state when the fleet cannot be read', async () => {
+    const root = document.createElement('div');
+    const failing = {
+      source: {
+        listRepos: () => Promise.reject(new Error('rate limited')),
+      } as unknown as FleetSource,
+      window: WINDOW,
+      isDemo: false,
+    };
+    await mountFleet(root, failing, NOW_MS, () => {});
+    expect(root.querySelector('.cr-app--error')?.textContent).toContain('rate limited');
+  });
+
+  it('shows an empty-grid hint when no repos are configured', async () => {
+    const root = document.createElement('div');
+    const empty = {
+      source: {
+        listRepos: () => Promise.resolve([]),
+      } as unknown as FleetSource,
+      window: WINDOW,
+      isDemo: false,
+    };
+    await mountFleet(root, empty, NOW_MS, () => {});
+    expect(root.querySelector('.cr-empty')?.textContent).toContain('No repos configured');
+  });
+
+  it('renders a per-repo error row without dropping the fleet', () => {
+    const errorRow: FleetRow = {
+      repo: 'acme/broken',
+      ok: false,
+      error: 'bad token',
+      score: null,
+      grade: null,
+      status: 'unknown',
+      agentPrShare: null,
+      agentCiFailureRate: null,
+      activeSessions: null,
+    };
+    const view: FleetView = { rows: [errorRow], refreshed: 0, total: 1, asOfMs: NOW_MS };
+    const node = buildFleetPage(view, { rows: [], asOfMs: NOW_MS }, () => {});
+    const row = node.querySelector('.cr-fleet__row--error');
+    expect(row?.textContent).toContain('acme/broken');
+    expect(row?.textContent).toContain('bad token');
   });
 });
