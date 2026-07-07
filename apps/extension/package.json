@@ -1,6 +1,6 @@
 {
   "name": "@triage/extension",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Chrome MV3 extension — thin per-target entry shell over @triage/engine and @triage/ui.",
   "private": true,
   "type": "module",
