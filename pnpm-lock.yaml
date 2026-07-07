@@ -87,7 +87,11 @@ importers:
 
   packages/engine: {}
 
-  packages/fleet: {}
+  packages/fleet:
+    dependencies:
+      '@triage/engine':
+        specifier: workspace:*
+        version: link:../engine
 
   packages/ui:
     dependencies:
