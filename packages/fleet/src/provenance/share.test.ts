@@ -26,6 +26,7 @@ function pull(over: Partial<PullRecord>): PullRecord {
     url: 'u',
     state: 'merged',
     headSha: 's',
+    headShas: ['s'],
     branch: 'feature/manual',
     authorLogin: 'a-person',
     createdAt: '2026-06-10T10:00:00.000Z',

@@ -34,8 +34,14 @@ export interface PullRecord {
   readonly title: string;
   readonly url: string;
   readonly state: PullState;
-  /** Head commit SHA — CI health is computed per head (BL-023). */
+  /** Current head commit SHA. */
   readonly headSha: string;
+  /**
+   * Every SHA this PR has had as head, oldest→newest (the last equals `headSha`).
+   * CI health is computed across all of them, so a PR that was red and then
+   * force-pushed green still counts as a failure (BL-023). Usually `[headSha]`.
+   */
+  readonly headShas: readonly string[];
   /** Head branch ref, for branch-prefix classification (BL-022). */
   readonly branch: string | null;
   /** Author login — for `*[bot]` detection only; not an aggregation key. */

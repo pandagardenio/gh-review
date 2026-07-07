@@ -44,8 +44,17 @@ export {
   coAuthorTrailers,
   DEFAULT_AGENT_IDENTITY,
 } from './provenance/agent-identity.js';
+export type {
+  CheckFailureCluster,
+  CiHealth,
+  CiHealthStat,
+} from './provenance/ci-health.js';
+export { ciHealth, ciHealthByRepo, MIN_PRS_FOR_RATE } from './provenance/ci-health.js';
+export type { CiHealthTrendPoint } from './provenance/ci-trend.js';
+export { ciHealthTrend } from './provenance/ci-trend.js';
 export type { AgentProvenance, ProvenanceShare, ProvenanceWindow } from './provenance/share.js';
 export {
+  eachBucketWindow,
   inWindow,
   provenanceByRepo,
   provenanceShare,
