@@ -116,11 +116,20 @@ export class GitHubClient {
    * errors; a `not-found` is how a missing ledger branch/file surfaces.
    */
   async getRaw(path: string): Promise<string> {
+    const url = `${this.#apiBase}${path}`;
     const headers = await this.#headers();
     headers.Accept = 'application/vnd.github.raw+json';
-    const response = await this.#send(`${this.#apiBase}${path}`, headers);
+    const cached = await this.#cache.get(url);
+    if (cached) headers['If-None-Match'] = cached.etag;
+
+    const response = await this.#send(url, headers);
+    if (response.status === 304 && cached) return cached.body;
     throwIfError(response);
-    return response.text();
+
+    const body = await response.text();
+    const etag = response.headers.get('ETag');
+    if (etag) await this.#cache.set(url, { etag, body });
+    return body;
   }
 
   async #headers(): Promise<Record<string, string>> {

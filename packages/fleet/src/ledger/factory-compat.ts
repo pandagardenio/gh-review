@@ -30,6 +30,8 @@ export function mapFactoryRunToSession(run: FactoryRun, repo: string): SessionRe
     startedAt: run.startedAt,
     endedAt: run.endedAt,
     // Factory runs carry no heartbeat; the end (or start, while running) stands in.
+    // A still-running factory run therefore reads as `stale` once past the freshness
+    // window — honest, since without a heartbeat we cannot confirm it is still alive.
     heartbeatAt: run.endedAt ?? run.startedAt,
     stage: run.station,
     branch: null,
