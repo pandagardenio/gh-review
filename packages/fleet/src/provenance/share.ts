@@ -65,6 +65,27 @@ export function windowEndingAt(now: string, days: number): ProvenanceWindow {
   return { since: new Date(end - days * DAY_MS).toISOString(), until: now };
 }
 
+/**
+ * Tile a window into `stepDays`-sized sub-windows, left-to-right, the last clamped
+ * to the window end. Empty for an invalid or empty window. Shared by the trend
+ * roll-ups (provenance and CI health) so bucketing stays identical across them.
+ */
+export function eachBucketWindow(window: ProvenanceWindow, stepDays: number): ProvenanceWindow[] {
+  const start = Date.parse(window.since);
+  const end = Date.parse(window.until);
+  const step = stepDays * DAY_MS;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end || step <= 0) return [];
+
+  const out: ProvenanceWindow[] = [];
+  for (let t = start; t < end; t += step) {
+    out.push({
+      since: new Date(t).toISOString(),
+      until: new Date(Math.min(t + step, end)).toISOString(),
+    });
+  }
+  return out;
+}
+
 /** Roll commits + PRs up into the provenance share for one repo or the whole fleet. */
 export function provenanceShare(
   commits: readonly CommitRecord[],

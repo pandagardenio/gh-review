@@ -12,6 +12,7 @@ function mergedPull(number: number, branch: string, mergedAt: string): PullRecor
     url: 'u',
     state: 'merged',
     headSha: 's',
+    headShas: ['s'],
     branch,
     authorLogin: 'a-person',
     createdAt: mergedAt,
