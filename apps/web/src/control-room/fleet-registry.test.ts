@@ -21,8 +21,12 @@ describe('loadFleetRepos', () => {
     expect(repos).toEqual(['acme/api', 'acme/web']);
   });
 
-  it('falls back to a single ?repo=', () => {
-    expect(loadFleetRepos('?repo=acme/api', memoryStorage())).toEqual(['acme/api']);
+  it('ignores ?repo= for the source list — it is the drill target, not a selector', () => {
+    // ?repo= must not flip an empty (demo) registry into a live single-repo read.
+    expect(loadFleetRepos('?repo=acme/api', memoryStorage())).toEqual([]);
+    // ...but a stored fleet still resolves alongside a ?repo= drill target.
+    const storage = memoryStorage({ 'control-room:repos': 'acme/api,acme/web' });
+    expect(loadFleetRepos('?repo=acme/api', storage)).toEqual(['acme/api', 'acme/web']);
   });
 
   it('reads the stored list when no URL override is present', () => {
