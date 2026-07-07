@@ -42,12 +42,16 @@ Mechanism: one uniform machinery — Release Please opens a release PR per compo
 for components marked auto, a small workflow step enables GitHub auto-merge on that
 release PR, so the CI gate still decides and the human gate applies only where listed.
 
-A shared-code caveat: a commit touching only `packages/engine` bumps **nothing** by
-default — decide per Release Please config whether engine/ui paths should be linked
-into the extension + bookmarklet components (recommended: yes, so a core fix reaches
-both surfaces' next release PR). Note the interaction with auto mode: with linking
-on, an engine-only fix auto-releases the bookmarklet page but only *queues* in the
-extension's gated release PR.
+Shared-code decision (settled during implementation): **no forced linking.** A commit
+touching only `packages/engine` or `packages/ui` opens no release PR by itself — it
+ships with the next extension/bookmarklet change. The reason is mechanical: Release
+Please attributes a commit to a component only by *that component's path*, and the one
+plugin that crosses paths (`linked-versions`) forces every linked component to a single
+shared version — which would destroy the independent versioning that is this item's
+whole point. So engine/ui stay unversioned internal libs and ride the consuming app's
+next release. To ship a pure-core fix immediately without an app change, cut the app's
+release manually (a `Release-As: x.y.z` commit footer, or re-run Release Please after a
+trivial app-scoped commit).
 
 ## Scope
 

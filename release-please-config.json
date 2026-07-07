@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "release-type": "simple",
-  "include-component-in-tag": false,
+  "include-component-in-tag": true,
+  "separate-pull-requests": true,
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
@@ -11,14 +11,25 @@
     { "type": "test", "section": "Tests", "hidden": true }
   ],
   "packages": {
-    ".": {
+    "apps/extension": {
+      "release-type": "node",
+      "component": "extension",
       "extra-files": [
         {
           "type": "json",
-          "path": "apps/extension/public/manifest.json",
+          "path": "public/manifest.json",
           "jsonpath": "$.version"
         }
       ]
+    },
+    "apps/bookmarklet": {
+      "release-type": "node",
+      "component": "bookmarklet",
+      "extra-files": ["src/version.ts"]
+    },
+    "apps/action": {
+      "release-type": "node",
+      "component": "action"
     }
   }
 }
