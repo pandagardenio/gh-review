@@ -59,6 +59,16 @@ importers:
         specifier: ^25.0.0
         version: 25.0.1
 
+  apps/cli:
+    dependencies:
+      '@triage/fleet':
+        specifier: workspace:*
+        version: link:../../packages/fleet
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.0
+
   apps/extension:
     dependencies:
       '@triage/engine':

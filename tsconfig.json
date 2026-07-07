@@ -5,6 +5,7 @@
     { "path": "./packages/fleet" },
     { "path": "./packages/ui" },
     { "path": "./apps/action" },
+    { "path": "./apps/cli" },
     { "path": "./apps/extension" },
     { "path": "./apps/web" }
   ]
