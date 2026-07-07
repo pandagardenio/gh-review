@@ -110,6 +110,19 @@ export class GitHubClient {
     return parseJson<T>(response);
   }
 
+  /**
+   * GET a resource as raw text (e.g. a file via the contents API with the `raw`
+   * media type) — env-agnostic, avoids base64 decoding. Throws the same classified
+   * errors; a `not-found` is how a missing ledger branch/file surfaces.
+   */
+  async getRaw(path: string): Promise<string> {
+    const headers = await this.#headers();
+    headers.Accept = 'application/vnd.github.raw+json';
+    const response = await this.#send(`${this.#apiBase}${path}`, headers);
+    throwIfError(response);
+    return response.text();
+  }
+
   async #headers(): Promise<Record<string, string>> {
     const token = await this.#tokens.get();
     if (!token) throw new GitHubApiError('unauthorized', 'no GitHub token configured');

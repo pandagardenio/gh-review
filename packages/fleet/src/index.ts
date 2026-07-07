@@ -12,12 +12,15 @@ export type { CachedResponse, ConditionalCache } from './github/cache.js';
 export { InMemoryConditionalCache } from './github/cache.js';
 export type { GitHubClientOptions, GitHubErrorKind } from './github/client.js';
 export { GitHubApiError, GitHubClient } from './github/client.js';
+export type { RichReader } from './github/ledger-source.js';
+export { LedgerFleetSource } from './github/ledger-source.js';
 export type {
   FleetRefresh,
   GitHubFleetSourceOptions,
   RepoLoad,
 } from './github/source.js';
 export { GitHubFleetSource } from './github/source.js';
+export { TieredFleetSource } from './github/tiered-source.js';
 export type {
   ComponentKey,
   HarnessGrade,
@@ -36,6 +39,12 @@ export {
   rankByHarnessHealth,
   scoreComponents,
 } from './harness/harness-health.js';
+export type { SessionActivity, SessionCounts } from './ledger/activity.js';
+export { countActivity, DEFAULT_FRESHNESS_MS, sessionActivity } from './ledger/activity.js';
+export type { FactoryRun } from './ledger/factory-compat.js';
+export { mapFactoryRunToSession } from './ledger/factory-compat.js';
+export type { LedgerContents } from './ledger/read.js';
+export { parseLedger } from './ledger/read.js';
 export type { LedgerEntry } from './ledger/schema.js';
 export {
   LEDGER_SCHEMA_VERSION,
