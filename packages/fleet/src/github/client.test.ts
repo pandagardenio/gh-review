@@ -145,6 +145,39 @@ describe('GitHubClient.getPaged', () => {
     });
   });
 
+  it('getRaw serves a 304 refresh from cache (single-fetch ledger budget)', async () => {
+    const textRes = (
+      text: string | null,
+      init: { status?: number; headers?: Record<string, string> } = {},
+    ): Response => {
+      const status = init.status ?? 200;
+      const headers = new Map(
+        Object.entries(init.headers ?? {}).map(([k, v]) => [k.toLowerCase(), v]),
+      );
+      return {
+        ok: status >= 200 && status < 300,
+        status,
+        text: async () => text ?? '',
+        headers: { get: (key: string) => headers.get(key.toLowerCase()) ?? null },
+      } as unknown as Response;
+    };
+    const cache = new InMemoryConditionalCache();
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(textRes('a\nb', { headers: { ETag: 'W/"raw1"' } }))
+      .mockResolvedValueOnce(textRes(null, { status: 304 }));
+    const client = new GitHubClient({
+      tokens,
+      fetch: fetch as unknown as typeof globalThis.fetch,
+      cache,
+    });
+
+    expect(await client.getRaw('/x')).toBe('a\nb');
+    expect(await client.getRaw('/x')).toBe('a\nb'); // 304 → cached text, no re-download
+    const second = (fetch.mock.calls[1]?.[1] as RequestInit).headers as Record<string, string>;
+    expect(second['If-None-Match']).toBe('W/"raw1"');
+  });
+
   it('throws unauthorized when no token is configured', async () => {
     const client = new GitHubClient({
       tokens: { get: async () => null, set: async () => {}, clear: async () => {} },
