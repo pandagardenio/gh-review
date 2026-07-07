@@ -1,10 +1,14 @@
 /**
- * Fleet registry for the web cockpit (BL-029). The repo list lives in
- * `localStorage`, overridable by URL params so a link can point the cockpit at a
- * fleet without touching storage:
+ * Fleet registry for the web cockpit (BL-029). The fleet's repo list lives in
+ * `localStorage`, overridable by URL so a link can point the cockpit at a fleet
+ * without touching storage:
  *   - `?repos=acme/api,acme/web` → those repos (comma-separated).
- *   - `?repo=acme/api`          → a single repo (the prototype's convention).
  *   - otherwise                 → the stored list, or empty (→ demo fixtures).
+ *
+ * `?repo=owner/repo` is deliberately NOT a fleet-list selector — it is the *drill
+ * target* the router zooms into (BL-032), read against this same fleet source.
+ * Treating it as a one-repo list would flip the demo into a live single-repo read
+ * the moment you click a fixture row.
  *
  * The token follows the same `TokenStore` discipline as Triage: its *value* lives
  * in `localStorage` under one key, never in a URL. No backend of our own.
@@ -28,13 +32,10 @@ function splitRepos(value: string): string[] {
     .filter((r) => SLUG.test(r));
 }
 
-/** Resolve the fleet's repo list: URL override first, then storage, then empty. */
+/** Resolve the fleet's repo list: `?repos=` override, then storage, then empty. */
 export function loadFleetRepos(search: string, storage: Storage): string[] {
-  const params = new URLSearchParams(search);
-  const many = params.get('repos');
+  const many = new URLSearchParams(search).get('repos');
   if (many) return splitRepos(many);
-  const one = params.get('repo');
-  if (one && SLUG.test(one)) return [one];
   const stored = storage.getItem(REPOS_KEY);
   return stored ? splitRepos(stored) : [];
 }
