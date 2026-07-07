@@ -1,5 +1,11 @@
-import { FixtureFleetSource, windowEndingAt } from '@triage/fleet';
+import {
+  FixtureFleetSource,
+  type FleetRepo,
+  type SessionRecord,
+  windowEndingAt,
+} from '@triage/fleet';
 import { describe, expect, it, vi } from 'vitest';
+import { stubFleetSource } from '../test-support.js';
 import { mountRepo } from './repo.js';
 
 const NOW_ISO = '2026-06-26T12:20:00.000Z';
@@ -35,18 +41,16 @@ describe('mountRepo', () => {
 
   // A live baseline source tags every FleetRepo `baseline` (GitHubFleetSource does),
   // so the factory gate must key off listSessions null-ness, not FleetRepo.tiers.
-  function liveLike(sessions: unknown[] | null) {
+  function liveLike(sessions: SessionRecord[] | null) {
+    const repos: FleetRepo[] = [
+      { owner: 'acme', name: 'api', slug: 'acme/api', tiers: ['baseline'] },
+    ];
     return {
-      source: {
-        listRepos: () =>
-          Promise.resolve([{ owner: 'acme', name: 'api', slug: 'acme/api', tiers: ['baseline'] }]),
-        listCommits: () => Promise.resolve([]),
-        listPulls: () => Promise.resolve([]),
-        listChecks: () => Promise.resolve([]),
+      source: stubFleetSource({
+        listRepos: () => Promise.resolve(repos),
         listSessions: () => Promise.resolve(sessions),
         listHookEvents: () => Promise.resolve(sessions === null ? null : []),
-        // biome-ignore lint/suspicious/noExplicitAny: minimal live-like FleetSource stub
-      } as any,
+      }),
       window: WINDOW,
       isDemo: false,
     };
@@ -85,15 +89,9 @@ describe('mountRepo', () => {
   it('renders an error state (no factory link) when the repo cannot be read', async () => {
     const root = document.createElement('div');
     const failing = {
-      source: {
-        listRepos: () => Promise.resolve([]),
+      source: stubFleetSource({
         listCommits: () => Promise.reject(new Error('rate limited')),
-        listPulls: () => Promise.reject(new Error('rate limited')),
-        listChecks: () => Promise.reject(new Error('rate limited')),
-        listSessions: () => Promise.reject(new Error('rate limited')),
-        listHookEvents: () => Promise.reject(new Error('rate limited')),
-        // biome-ignore lint/suspicious/noExplicitAny: minimal stub for the error path
-      } as any,
+      }),
       window: WINDOW,
       isDemo: false,
     };
