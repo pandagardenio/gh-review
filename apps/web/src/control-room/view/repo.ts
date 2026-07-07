@@ -9,13 +9,7 @@
  * CSP-safe (the `el` helper), zero arithmetic in the shell.
  */
 
-import {
-  buildRepoView,
-  formatPercent,
-  formatScore,
-  hasRichTier,
-  type RepoView,
-} from '@triage/fleet';
+import { buildRepoView, formatPercent, formatScore, type RepoView } from '@triage/fleet';
 import { el } from '@triage/ui';
 import type { WebFleetContext } from '../fleet-source.js';
 import { type BadgeKind, badge, externalLink, ratioBar, section, statCard } from './components.js';
@@ -191,7 +185,22 @@ export function buildRepoPage(
   });
 }
 
-/** Mount the repo view into `root`: derive the tier, load the view-model, render. */
+/**
+ * Rich-tier (instrumented) iff the repo has a readable session ledger — the same
+ * `listSessions === null ⇒ baseline` signal the fleet grid uses, so the tier is
+ * accurate in live mode too (a live `FleetRepo` from the baseline REST source is
+ * always tagged `baseline`, so `hasRichTier` would be wrong here). Best-effort: a
+ * failed probe just withholds the deeper level, never a dead-end.
+ */
+async function isInstrumented(ctx: WebFleetContext, repo: string): Promise<boolean> {
+  try {
+    return (await ctx.source.listSessions(repo)) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/** Mount the repo view into `root`: load the view-model, derive the tier, render. */
 export async function mountRepo(
   root: HTMLElement,
   ctx: WebFleetContext,
@@ -205,23 +214,9 @@ export async function mountRepo(
       children: [el('p', { class: 'cr-center', text: `Reading ${repo}…` })],
     }),
   );
-  try {
-    const [repos, view] = await Promise.all([
-      ctx.source.listRepos(),
-      buildRepoView(ctx.source, repo, ctx.window, nowMs),
-    ]);
-    // Factory is a deeper level offered only for an instrumented (rich-tier) repo —
-    // a baseline repo never dead-ends in an empty factory cockpit (BL-032).
-    const fleetRepo = repos.find((r) => r.slug === repo);
-    const isFactory = fleetRepo ? hasRichTier(fleetRepo) : false;
-    root.replaceChildren(buildRepoPage(view, ctx.isDemo, isFactory, on));
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    root.replaceChildren(
-      el('div', {
-        class: ['cr-app', 'cr-app--error'],
-        children: [el('p', { class: 'cr-center', text: `Could not read ${repo}: ${message}` })],
-      }),
-    );
-  }
+  // buildRepoView never throws — it returns `{ ok: false }` on failure, which still
+  // renders through buildRepoPage *with* a working back button (never a dead-end).
+  const view = await buildRepoView(ctx.source, repo, ctx.window, nowMs);
+  const isFactory = view.ok && (await isInstrumented(ctx, repo));
+  root.replaceChildren(buildRepoPage(view, ctx.isDemo, isFactory, on));
 }

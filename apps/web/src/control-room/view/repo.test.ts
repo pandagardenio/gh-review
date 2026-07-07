@@ -33,6 +33,37 @@ describe('mountRepo', () => {
     expect(root.textContent).toContain('baseline tier or none');
   });
 
+  // A live baseline source tags every FleetRepo `baseline` (GitHubFleetSource does),
+  // so the factory gate must key off listSessions null-ness, not FleetRepo.tiers.
+  function liveLike(sessions: unknown[] | null) {
+    return {
+      source: {
+        listRepos: () =>
+          Promise.resolve([{ owner: 'acme', name: 'api', slug: 'acme/api', tiers: ['baseline'] }]),
+        listCommits: () => Promise.resolve([]),
+        listPulls: () => Promise.resolve([]),
+        listChecks: () => Promise.resolve([]),
+        listSessions: () => Promise.resolve(sessions),
+        listHookEvents: () => Promise.resolve(sessions === null ? null : []),
+        // biome-ignore lint/suspicious/noExplicitAny: minimal live-like FleetSource stub
+      } as any,
+      window: WINDOW,
+      isDemo: false,
+    };
+  }
+
+  it('offers the factory for a live repo with a readable ledger (tiers say baseline)', async () => {
+    const root = document.createElement('div');
+    await mountRepo(root, liveLike([]), 'acme/api', NOW_MS, noop);
+    expect(root.querySelector('.cr-repo__factory')).not.toBeNull();
+  });
+
+  it('withholds the factory for a live repo with no ledger (listSessions null)', async () => {
+    const root = document.createElement('div');
+    await mountRepo(root, liveLike(null), 'acme/api', NOW_MS, noop);
+    expect(root.querySelector('.cr-repo__factory')).toBeNull();
+  });
+
   it('drills into the factory when the Factory affordance is clicked', async () => {
     const root = document.createElement('div');
     const factory = vi.fn();
@@ -69,5 +100,7 @@ describe('mountRepo', () => {
     await mountRepo(root, failing, 'acme/broken', NOW_MS, noop);
     expect(root.querySelector('.cr-app--error')?.textContent).toContain('acme/broken');
     expect(root.querySelector('.cr-repo__factory')).toBeNull();
+    // the error state still offers a way back to the fleet — never a dead-end.
+    expect(root.querySelector('.cr-repo__back')).not.toBeNull();
   });
 });
