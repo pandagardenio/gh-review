@@ -23,6 +23,10 @@ export type {
   SessionsView,
 } from './cockpit/view.js';
 export { buildFleetView, buildRepoView, buildSessionsView } from './cockpit/view.js';
+export type { FailureCluster, LedgerSummary, StationStat } from './factory/ledger.js';
+export { clusterFailures, summarize } from './factory/ledger.js';
+export type { RunRecord, RunStatus, RunUsage, Station } from './factory/model.js';
+export { STATION_ORDER } from './factory/model.js';
 export { FixtureFleetSource } from './fixture-source.js';
 export type { CachedResponse, ConditionalCache } from './github/cache.js';
 export { InMemoryConditionalCache } from './github/cache.js';

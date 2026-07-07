@@ -87,6 +87,9 @@ importers:
       '@triage/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@triage/fleet':
+        specifier: workspace:*
+        version: link:../../packages/fleet
       '@triage/ui':
         specifier: workspace:*
         version: link:../../packages/ui

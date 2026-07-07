@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@triage/engine": "workspace:*",
+    "@triage/fleet": "workspace:*",
     "@triage/ui": "workspace:*"
   },
   "devDependencies": {

@@ -12,22 +12,14 @@
  * `.factory/policy.yml`.
  */
 
-/** Workstations a Run can belong to (architecture.md §1.2). */
-export type Station = 'intake' | 'spec' | 'plan' | 'implement' | 'qa' | 'integrate' | 'deploy';
+// The factory Run model (Station, STATION_ORDER, RunStatus, RunUsage, RunRecord) and
+// its ledger roll-up now live in `@triage/fleet` (BL-029) so no roll-up arithmetic
+// remains under apps/web. Re-exported here so the source implementations and views
+// keep importing the factory model from a single boundary module.
+import type { RunRecord } from '@triage/fleet';
 
-/** Canonical pipeline order — used to lay stations out left-to-right. */
-export const STATION_ORDER: readonly Station[] = [
-  'intake',
-  'spec',
-  'plan',
-  'implement',
-  'qa',
-  'integrate',
-  'deploy',
-];
-
-/** Run lifecycle states (ledger-schema.md). `running` is non-terminal. */
-export type RunStatus = 'running' | 'success' | 'failure' | 'escalated';
+export type { RunRecord, RunStatus, RunUsage, Station } from '@triage/fleet';
+export { STATION_ORDER } from '@triage/fleet';
 
 /** WorkItem stage labels (`stage:*` in policy.yml). */
 export type Stage =
@@ -43,28 +35,6 @@ export type Stage =
   | 'escalated';
 
 export type Priority = 'p0' | 'p1' | 'p2' | 'p3';
-
-/** Per-Run resource usage. Token fields are best-effort (ADR 0004). */
-export interface RunUsage {
-  readonly tokensIn: number | null;
-  readonly tokensOut: number | null;
-  readonly wallSeconds: number;
-  readonly toolCalls: number;
-}
-
-/** One station invocation against a WorkItem (ledger-schema.md "Document"). */
-export interface RunRecord {
-  readonly id: string;
-  readonly workItemId: number;
-  readonly station: Station;
-  readonly status: RunStatus;
-  readonly startedAt: string;
-  readonly endedAt: string | null;
-  /** Short controlled vocab when status !== success; null otherwise. */
-  readonly failureReason: string | null;
-  readonly usage: RunUsage;
-  readonly pr: number | null;
-}
 
 /** A piece of work in flight, derived from its GitHub issue + `stage:*` label. */
 export interface WorkItem {

@@ -5,8 +5,8 @@
  * cockpit shows highlights + the raw file; it never writes.
  */
 
+import { formatCount } from '@triage/fleet';
 import { el } from '@triage/ui';
-import { formatCount } from '../format.js';
 import type { PolicySummary } from '../source.js';
 import { badge, externalLink, section, statCard } from './components.js';
 
