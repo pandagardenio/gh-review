@@ -1,20 +1,24 @@
-# BL-030: Automated semver releases. Release Please watches main, computes the
-# next version from the conventional commits merged since the last release
-# (feat -> minor, fix -> patch, ! / BREAKING CHANGE -> major; the repo's
-# `type: <emoji> subject` format parses cleanly — the emoji is just changelog
-# text), and maintains a rolling release PR that bumps
-# apps/extension/public/manifest.json (the single version source, via extra-files)
-# and the changelog. Merging that PR creates the vX.Y.Z tag, which triggers the
-# BL-017 release train (release.yml) unchanged.
+# BL-030 + BL-031: Automated per-component semver releases. Release Please watches
+# main and maintains a SEPARATE rolling release PR per app (extension, bookmarklet,
+# action), each computing its next version from the conventional commits that touched
+# ITS paths (feat -> minor, fix -> patch, ! / BREAKING CHANGE -> major; the repo's
+# `type: <emoji> subject` format parses cleanly). Merging a component's release PR
+# creates its tag family entry (extension-vX.Y.Z / bookmarklet-vX.Y.Z / action-vX.Y.Z),
+# which fires exactly that component's train in release.yml.
 #
-# Cadence stays a human decision: nothing releases without a human merging the
-# release PR (the Web Store review queue, BL-019, punishes release-on-every-merge).
+# Release modes (BL-031): the bookmarklet and action release PRs auto-merge on green
+# CI (instant deploys, opt-in consumers); the extension release PR stays gated for a
+# human (its publish enters the Web Store review queue). engine/ui are unversioned
+# internal libs — a change touching only them rides the next app change (no forced
+# linking; see backlog/BL-031).
 #
-# One-time bootstrap: set RELEASE_PLEASE_TOKEN to a PAT (or GitHub App token) with
-# `contents: write` so the tag it pushes triggers release.yml — GitHub suppresses
-# workflow triggers from the default GITHUB_TOKEN. Without it the release PR and
-# tag are still created, but the release train must be kicked by re-pushing the
-# tag (`git push origin :vX.Y.Z && git push origin vX.Y.Z`).
+# One-time bootstrap:
+#   - RELEASE_PLEASE_TOKEN (PAT / GitHub App token, contents: write) so the tags it
+#     pushes trigger release.yml — GitHub suppresses workflow triggers from the default
+#     GITHUB_TOKEN. Without it the release PRs + tags are still created, but the train
+#     must be kicked by re-pushing the tag.
+#   - Repo setting "Allow auto-merge" enabled, so the bookmarklet/action release PRs
+#     can self-merge on green CI. Without it those PRs simply wait for a human.
 name: Release Please
 
 on:
@@ -31,7 +35,7 @@ concurrency:
 
 jobs:
   release-please:
-    name: Maintain release PR / tag on merge
+    name: Maintain per-component release PRs / tags on merge
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -39,5 +43,33 @@ jobs:
       # (release-please-config.json, .release-please-manifest.json), so the
       # action auto-detects them.
       - uses: googleapis/release-please-action@v4
+        id: rp
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+
+      # BL-031 auto mode: enable auto-merge on the bookmarklet + action release PRs
+      # (they self-ship on green CI); the extension release PR is left for a human.
+      # The component is read from the PR's head branch
+      # (release-please--branches--main--components--<component>). Failures are
+      # non-fatal — if repo auto-merge is off, the PR just waits for a human.
+      - name: Enable auto-merge on auto-mode release PRs
+        if: ${{ steps.rp.outputs.prs != '' && steps.rp.outputs.prs != '[]' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          PRS: ${{ steps.rp.outputs.prs }}
+        run: |
+          set -euo pipefail
+          echo "$PRS" | jq -c '.[]' | while read -r pr; do
+            num=$(echo "$pr" | jq -r '.number')
+            head=$(echo "$pr" | jq -r '.headBranchName')
+            case "$head" in
+              *--components--bookmarklet | *--components--action)
+                echo "Enabling auto-merge on #$num ($head)"
+                gh pr merge "$num" --auto --squash \
+                  || echo "::warning::Could not enable auto-merge on #$num — enable 'Allow auto-merge' in repo settings."
+                ;;
+              *)
+                echo "PR #$num ($head) stays gated — a human merges it."
+                ;;
+            esac
+          done

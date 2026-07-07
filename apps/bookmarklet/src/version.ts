@@ -3,4 +3,4 @@
  * bookmarklet means re-installing it, so the reviewer can confirm which build is
  * running against the version on the install page (MVP.md §5.1).
  */
-export const BOOKMARKLET_VERSION = '0.0.0';
+export const BOOKMARKLET_VERSION = '0.0.0'; // x-release-please-version

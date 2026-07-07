@@ -1,13 +1,24 @@
-# Release (BL-017): pushing a version tag is the ONLY release action — everything
-# downstream is automatic. The tag must match apps/extension/public/manifest.json
-# (the single version source), the full quality gate must pass, and the built
-# artifacts are attached to a GitHub Release. Per-surface deploys (BL-018 Pages,
-# BL-019 Web Store, BL-020 update channel) chain off this workflow as later jobs.
+# Release trains (BL-017 + BL-031): each app has its own tag family and train.
+# Release Please (release-please.yml) opens a per-component release PR; merging one
+# creates its tag, which fires exactly that component's train here:
+#
+#   extension-v*    gate + build -> GitHub Release (extension zip + channel zip)
+#                   -> Chrome Web Store (BL-019) + update channel (BL-020)
+#   bookmarklet-v*  gate + build -> GitHub Release (install.html + bookmarklet.txt)
+#                   -> GitHub Pages (BL-018)
+#   action-v*       gate + build -> GitHub Release -> move the floating action-vN alias
+#
+# The full monorepo quality gate runs on every train (cheap safety). Each train's
+# version guard compares the tag against that component's own version source, so a
+# stray hand-pushed tag still fails safely.
 name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags:
+      - 'extension-v*'
+      - 'bookmarklet-v*'
+      - 'action-v*'
 
 permissions:
   contents: write
@@ -16,67 +27,56 @@ concurrency:
   group: release-${{ github.ref }}
 
 jobs:
-  release:
-    name: Gate, package & publish release
+  # ── extension train ─────────────────────────────────────────────────────────
+  release-extension:
+    name: Release extension
+    if: startsWith(github.ref_name, 'extension-v')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Fail loudly BEFORE building anything: a tag that does not match the
-      # manifest version must never publish a half-versioned release.
       - name: Verify tag matches public/manifest.json
         run: |
           set -euo pipefail
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_VERSION="${GITHUB_REF_NAME#extension-v}"
           MANIFEST_VERSION=$(jq -r .version apps/extension/public/manifest.json)
           if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} (version ${TAG_VERSION}) does not match apps/extension/public/manifest.json (version ${MANIFEST_VERSION}). Bump the manifest (the single version source) and re-tag."
+            echo "::error::Tag ${GITHUB_REF_NAME} (version ${TAG_VERSION}) does not match apps/extension/public/manifest.json (version ${MANIFEST_VERSION})."
             exit 1
           fi
-          echo "Releasing version ${MANIFEST_VERSION}"
+          echo "Releasing extension ${MANIFEST_VERSION}"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # A release never skips the gate — same four commands as CI's verify job.
       - name: Lint & format check (Biome)
         run: pnpm lint
-
       - name: Typecheck
         run: pnpm typecheck
-
       - name: Test
         run: pnpm test
-
       - name: Build
         run: pnpm build
 
-      # Four artifact groups: extension zip (without the channel — that is not
-      # part of the extension package), the bookmarklet install page + URL, and
-      # the channel pair zipped so the manifest/bundle pairing stays intact.
-      - name: Package release artifacts
+      # Extension zip (without the channel — not part of the extension package)
+      # plus the channel pair zipped so the manifest/bundle pairing stays intact.
+      - name: Package extension artifacts
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${GITHUB_REF_NAME#extension-v}"
           STAGING="$GITHUB_WORKSPACE/dist-release"
           mkdir -p "$STAGING"
-
           (cd apps/extension/dist && zip -r "$STAGING/triage-extension-v${VERSION}.zip" . -x "channel/*")
           (cd apps/extension/dist/channel && zip -r "$STAGING/triage-channel-v${VERSION}.zip" .)
-          cp apps/bookmarklet/dist/install.html "$STAGING/install.html"
-          cp apps/bookmarklet/dist/bookmarklet.txt "$STAGING/bookmarklet.txt"
-
           ls -l "$STAGING"
 
       - name: Create GitHub Release
@@ -84,87 +84,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#extension-v}"
           gh release create "$GITHUB_REF_NAME" \
-            --title "Triage $GITHUB_REF_NAME" \
+            --title "Extension $GITHUB_REF_NAME" \
             --generate-notes \
-            "dist-release/triage-extension-${GITHUB_REF_NAME}.zip" \
-            "dist-release/triage-channel-${GITHUB_REF_NAME}.zip" \
-            "dist-release/install.html" \
-            "dist-release/bookmarklet.txt"
+            "dist-release/triage-extension-v${VERSION}.zip" \
+            "dist-release/triage-channel-v${VERSION}.zip"
 
-  # BL-018: publish the bookmarklet install page to GitHub Pages on every
-  # release, so one canonical URL always serves the latest build — re-installing
-  # from that page IS the bookmarklet's update story (MVP.md §5.1). The page is
-  # fully self-contained (BL-013); this is never a remote loader for github.com
-  # (MVP.md §5.2). Runs only after the release job's version guard + gate passed.
-  pages:
-    name: Deploy bookmarklet install page (Pages)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: release
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build bookmarklet
-        run: pnpm --filter @triage/bookmarklet build
-
-      # The install page becomes the site root; bookmarklet.txt rides along for
-      # anyone who wants the raw javascript: URL.
-      - name: Stage Pages site
-        run: |
-          set -euo pipefail
-          mkdir -p pages-site
-          cp apps/bookmarklet/dist/install.html pages-site/index.html
-          cp apps/bookmarklet/dist/bookmarklet.txt pages-site/bookmarklet.txt
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: pages-site
-
-      - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
-
-  # BL-019: upload the released extension zip to the Chrome Web Store and submit
-  # it for review — the store is the extension's real update path (MVP.md §5.3).
-  # Gated on the CWS_EXTENSION_ID repo VARIABLE (same dormancy pattern as Sonar's
-  # SONAR_ORGANIZATION: secrets are not readable in a job-level `if`), so the job
-  # skips cleanly until the one-time Web Store bootstrap is done: developer
-  # account, first manual listing, OAuth client + refresh token, then set the
-  # CWS_EXTENSION_ID variable and CWS_CLIENT_ID / CWS_CLIENT_SECRET /
-  # CWS_REFRESH_TOKEN secrets. Publishes the exact zip attached to the GitHub
-  # Release — never a separate rebuild. The job's contract ends at "submitted";
-  # store review latency is external.
+  # BL-019: upload the released extension zip to the Chrome Web Store and submit it
+  # for review — the store is the extension's real update path (MVP.md §5.3). Gated
+  # on the CWS_EXTENSION_ID repo VARIABLE (secrets are not readable in a job-level
+  # `if`), so it skips cleanly until the one-time Web Store bootstrap is done. The
+  # job's contract ends at "submitted"; store review latency is external.
   webstore:
     name: Publish extension to Chrome Web Store
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: release
+    needs: release-extension
     if: ${{ vars.CWS_EXTENSION_ID != '' }}
     permissions:
       contents: read
@@ -227,20 +163,15 @@ jobs:
           esac
 
   # BL-020: publish dist/channel/ to the static host with the validated cache
-  # policy (MVP.md §5.2, pinned in apps/extension/src/update-channel/channel.ts):
-  # manifest.json → no-store, hashed bundle → immutable. The bundle is uploaded
-  # BEFORE the manifest so a reader never sees a manifest naming a bundle that
-  # is not there yet. Host contract: any S3-compatible bucket (AWS S3,
-  # Cloudflare R2, MinIO — set CHANNEL_ENDPOINT_URL for non-AWS). Gated on the
-  # CHANNEL_BUCKET repo variable (same dormancy pattern as Sonar / the Web
-  # Store job) so it skips cleanly until a host is configured. Publishes the
-  # exact pair attached to the GitHub Release. Never wired to the github.com
+  # policy (manifest.json → no-store, hashed bundle → immutable). Bundle uploaded
+  # BEFORE the manifest so a reader never sees a manifest naming a missing bundle.
+  # Gated on the CHANNEL_BUCKET repo variable. Never wired to the github.com
   # bookmarklet.
   channel:
     name: Publish update channel (static host)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: release
+    needs: release-extension
     if: ${{ vars.CHANNEL_BUCKET != '' }}
     permissions:
       contents: read
@@ -289,10 +220,6 @@ jobs:
             --cache-control "no-store" \
             --content-type "application/json" "${ENDPOINT_ARGS[@]}"
 
-      # Optional end-to-end check: set CHANNEL_PUBLIC_URL (the public base URL
-      # of the prefix) and the loader contract is verified against the live
-      # host — the manifest is served no-store, and the bundle it names is
-      # reachable with the immutable policy.
       - name: Verify live channel headers
         if: ${{ vars.CHANNEL_PUBLIC_URL != '' }}
         env:
@@ -309,3 +236,173 @@ jobs:
           echo "$BUNDLE_HEADERS"
           echo "$BUNDLE_HEADERS" | grep -i "cache-control" | grep -qi "immutable" \
             || { echo "::error::$BUNDLE_NAME is not served with the immutable cache policy"; exit 1; }
+
+  # ── bookmarklet train ───────────────────────────────────────────────────────
+  release-bookmarklet:
+    name: Release bookmarklet
+    if: startsWith(github.ref_name, 'bookmarklet-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches src/version.ts
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#bookmarklet-v}"
+          SRC_VERSION=$(sed -nE "s/.*BOOKMARKLET_VERSION = '([^']+)'.*/\1/p" apps/bookmarklet/src/version.ts)
+          if [ "$TAG_VERSION" != "$SRC_VERSION" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} (version ${TAG_VERSION}) does not match apps/bookmarklet/src/version.ts (version ${SRC_VERSION})."
+            exit 1
+          fi
+          echo "Releasing bookmarklet ${SRC_VERSION}"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint & format check (Biome)
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+
+      - name: Package bookmarklet artifacts
+        run: |
+          set -euo pipefail
+          STAGING="$GITHUB_WORKSPACE/dist-release"
+          mkdir -p "$STAGING"
+          cp apps/bookmarklet/dist/install.html "$STAGING/install.html"
+          cp apps/bookmarklet/dist/bookmarklet.txt "$STAGING/bookmarklet.txt"
+          ls -l "$STAGING"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Bookmarklet $GITHUB_REF_NAME" \
+            --generate-notes \
+            "dist-release/install.html" \
+            "dist-release/bookmarklet.txt"
+
+  # BL-018: publish the bookmarklet install page to GitHub Pages — one canonical
+  # URL always serves the latest build; re-installing from it IS the bookmarklet's
+  # update story (MVP.md §5.1). The page is self-contained (BL-013); never a remote
+  # loader for github.com (MVP.md §5.2).
+  pages:
+    name: Deploy bookmarklet install page (Pages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: release-bookmarklet
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build bookmarklet
+        run: pnpm --filter @triage/bookmarklet build
+
+      - name: Stage Pages site
+        run: |
+          set -euo pipefail
+          mkdir -p pages-site
+          cp apps/bookmarklet/dist/install.html pages-site/index.html
+          cp apps/bookmarklet/dist/bookmarklet.txt pages-site/bookmarklet.txt
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-site
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
+
+  # ── action train ────────────────────────────────────────────────────────────
+  release-action:
+    name: Release action
+    if: startsWith(github.ref_name, 'action-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches apps/action/package.json
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#action-v}"
+          PKG_VERSION=$(jq -r .version apps/action/package.json)
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} (version ${TAG_VERSION}) does not match apps/action/package.json (version ${PKG_VERSION})."
+            exit 1
+          fi
+          echo "Releasing action ${PKG_VERSION}"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint & format check (Biome)
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Action $GITHUB_REF_NAME" \
+            --generate-notes
+
+      # Consumers pin `uses: …/apps/action@action-vN` — move that floating major
+      # alias to this release so they track the latest action-vN.*. Pushed with the
+      # default token, which does NOT re-trigger this workflow (no release loop).
+      - name: Move floating major alias
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#action-v}"
+          MAJOR="action-v${VERSION%%.*}"
+          git tag -f "$MAJOR" "$GITHUB_SHA"
+          git push origin -f "refs/tags/$MAJOR"
+          echo "Moved floating alias ${MAJOR} → ${GITHUB_REF_NAME}"

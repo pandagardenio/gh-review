@@ -77,41 +77,50 @@ pnpm dev            # turbo: watch builds
 
 ## Releasing
 
-Releasing is one click (**BL-030**, `.github/workflows/release-please.yml`). You never
-bump the version or craft a tag by hand:
+Each app releases on its **own** train (**BL-030** semver + **BL-031** per-component
+trains). You never bump a version or craft a tag by hand — Release Please
+(`.github/workflows/release-please.yml`) reads the conventional commits (`feat:` →
+minor, `fix:` → patch, `!`/`BREAKING CHANGE` → major) and keeps a **separate rolling
+release PR per app**, each bumping only that app's version source and changelog from the
+commits that touched its paths:
 
-1. Merge feature/fix PRs to `main` as usual. Release Please reads the conventional
-   commits (`feat:` → minor, `fix:` → patch, `!`/`BREAKING CHANGE` → major) and keeps a
-   rolling **release PR** open that bumps `apps/extension/public/manifest.json` (the
-   single version source) and accumulates the changelog.
-2. When you want to ship, **merge the release PR**. That creates the `vX.Y.Z` tag, which
-   triggers the release train below. Cadence stays a human decision — nothing releases
-   until you merge that PR (the Web Store review queue, BL-019, punishes releasing on
-   every merge).
+| App | Version source | Tag family | Release mode |
+|---|---|---|---|
+| extension | `apps/extension/public/manifest.json` | `extension-vX.Y.Z` | **gated** — you merge the release PR |
+| bookmarklet | `apps/bookmarklet/src/version.ts` | `bookmarklet-vX.Y.Z` | **auto** — release PR self-merges on green CI |
+| action | `apps/action/package.json` | `action-vX.Y.Z` | **auto** |
 
-> **One-time bootstrap:** set a `RELEASE_PLEASE_TOKEN` secret to a PAT (or GitHub App
-> token) with `contents: write`, so the tag Release Please pushes actually triggers
-> `release.yml` — GitHub suppresses workflow triggers from the default `GITHUB_TOKEN`.
-> Without it the release PR and tag are still created, but you must re-push the tag to
-> kick the train (`git push origin :vX.Y.Z && git push origin vX.Y.Z`).
+Merging a component's release PR creates its tag, which fires exactly that component's
+train in `.github/workflows/release.yml`:
 
-The release train (**BL-017**, `.github/workflows/release.yml`) re-runs the full quality
-gate — it re-verifies the tag matches `apps/extension/public/manifest.json`, so a stray
-hand-pushed tag still fails safely — then publishes a GitHub Release with the
-extension zip (channel excluded), the bookmarklet `install.html` + `bookmarklet.txt`,
-and the update-channel pair. It then deploys the bookmarklet install page to GitHub
-Pages (**BL-018**) — the canonical install URL always serves the latest release, and
-re-installing from it is how the bookmarklet updates. It also submits the released
-extension zip to the Chrome Web Store (**BL-019**) once the one-time bootstrap is done:
-create the developer account and first listing manually, mint the OAuth credentials,
-then set the `CWS_EXTENSION_ID` repo **variable** (the job's dormancy gate, same
-pattern as Sonar's `SONAR_ORGANIZATION`) and the `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET`
-/ `CWS_REFRESH_TOKEN` secrets — until then the job skips cleanly. Finally it publishes
-the update channel (**BL-020**) to any S3-compatible bucket with the validated cache
-policy, bundle before manifest; gate it on with the `CHANNEL_BUCKET` variable +
-`CHANNEL_ACCESS_KEY_ID` / `CHANNEL_SECRET_ACCESS_KEY` secrets (full contract in
-[`apps/extension/README.md`](./apps/extension/README.md)).
+- **`extension-v*`** → full gate + build → GitHub Release (extension zip + channel pair)
+  → Chrome Web Store submission (**BL-019**) + update-channel publish (**BL-020**).
+- **`bookmarklet-v*`** → gate + build → GitHub Release (`install.html` +
+  `bookmarklet.txt`) → GitHub Pages deploy (**BL-018**).
+- **`action-v*`** → gate + build → GitHub Release → moves the floating `action-vN` major
+  alias that consumers pin with `uses: …/apps/action@action-vN`.
 
-The Pages job self-enables GitHub Pages on first run (`configure-pages` with
-`enablement: true`); if the repo restricts that, set Pages → Source → GitHub Actions
-once in the repo settings.
+Each train re-verifies the tag against its component's version source, so a stray
+hand-pushed tag still fails safely. `packages/engine` / `packages/ui` are unversioned
+internal libs: a change touching only them rides the next extension/bookmarklet release
+(no forced linking — see [`backlog/BL-031`](./backlog/BL-031-per-component-releases.md)).
+
+**Why the extension is gated but the others are auto:** the extension's publish enters
+the Chrome Web Store review queue (days; rejects uploads while one is pending), so its
+cadence stays a human decision. The bookmarklet page and the action deploy instantly to
+opt-in consumers, so their release PRs self-merge.
+
+> **One-time bootstrap:**
+> - `RELEASE_PLEASE_TOKEN` secret (PAT / GitHub App token, `contents: write`) so the
+>   tags Release Please pushes trigger `release.yml` — GitHub suppresses workflow
+>   triggers from the default `GITHUB_TOKEN`. Without it, re-push the tag to kick a train.
+> - Enable **Allow auto-merge** in repo settings so the bookmarklet/action release PRs
+>   self-merge; without it they simply wait for a human.
+> - Chrome Web Store (**BL-019**): developer account + first manual listing + OAuth
+>   credentials, then the `CWS_EXTENSION_ID` variable and `CWS_CLIENT_ID` /
+>   `CWS_CLIENT_SECRET` / `CWS_REFRESH_TOKEN` secrets — until then the job skips cleanly.
+> - Update channel (**BL-020**): the `CHANNEL_BUCKET` variable + `CHANNEL_ACCESS_KEY_ID`
+>   / `CHANNEL_SECRET_ACCESS_KEY` secrets (full contract in
+>   [`apps/extension/README.md`](./apps/extension/README.md)).
+> - Pages self-enables on first run (`configure-pages` with `enablement: true`); if the
+>   repo restricts that, set Pages → Source → GitHub Actions once.
