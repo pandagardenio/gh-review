@@ -45,11 +45,17 @@ export interface ProvenanceClass {
 const HUMAN: ProvenanceClass = { provenance: 'human', agent: null };
 const BOT_SUFFIX = '[bot]';
 
-/** Sensible defaults covering the common coding agents. Tune per fleet. */
+/**
+ * Sensible defaults covering the common coding agents. Tune per fleet.
+ *
+ * Matching is case-insensitive **substring**, so needles must be distinctive:
+ * prefer an agent's name or dedicated no-reply identity over a shared company
+ * domain (e.g. `anthropic`), which would also match a human co-author's email and
+ * over-state the agent share.
+ */
 export const DEFAULT_AGENT_IDENTITY: AgentIdentityConfig = {
   trailers: [
     { match: 'claude', agent: 'claude-code' },
-    { match: 'anthropic', agent: 'claude-code' },
     { match: 'copilot', agent: 'copilot' },
     { match: 'cursor', agent: 'cursor' },
     { match: 'devin', agent: 'devin' },
@@ -84,13 +90,15 @@ export function coAuthorTrailers(message: string): string[] {
 function matchBotLogin(login: string | null, config: AgentIdentityConfig): string | null {
   if (!login) return null;
   const lower = login.toLowerCase();
+  // Only a `*[bot]` account is machine authorship. A human login that merely
+  // contains an agent's name (e.g. `devine`, `mcursor`) must never be swept up.
+  if (!lower.endsWith(BOT_SUFFIX)) return null;
   for (const rule of config.botLogins) {
     if (lower.includes(rule.match.toLowerCase())) return rule.agent;
   }
-  // Any other `*[bot]` login is still machine authorship — attribute it under its
-  // own derived name (e.g. `github-actions`) so it is visible, not lumped with a person.
-  if (lower.endsWith(BOT_SUFFIX)) return login.slice(0, login.length - BOT_SUFFIX.length);
-  return null;
+  // Unknown bot: attribute it under its own derived name (e.g. `github-actions`)
+  // so machine authorship stays visible, not lumped with a person.
+  return login.slice(0, login.length - BOT_SUFFIX.length);
 }
 
 /**

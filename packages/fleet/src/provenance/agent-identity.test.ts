@@ -58,6 +58,28 @@ describe('classifyCommit', () => {
     expect(classifyCommit(commit({}))).toEqual({ provenance: 'human', agent: null });
   });
 
+  it('does not misclassify a human co-author who shares the agent company domain', () => {
+    const cls = classifyCommit(
+      commit({ message: 'feat: x\n\nCo-Authored-By: Jane Doe <jane@anthropic.com>' }),
+    );
+    expect(cls).toEqual({ provenance: 'human', agent: null });
+  });
+
+  it('does not misclassify a human login that merely contains an agent name', () => {
+    // `devine` contains `devin`, but is a human login (no [bot] suffix).
+    expect(classifyCommit(commit({ authorLogin: 'devine' }))).toEqual({
+      provenance: 'human',
+      agent: null,
+    });
+  });
+
+  it('classifies a known coding-agent bot login under its friendly name', () => {
+    expect(classifyCommit(commit({ authorLogin: 'copilot[bot]' }))).toEqual({
+      provenance: 'agent',
+      agent: 'copilot',
+    });
+  });
+
   it('lets an agent trailer win over the human author (agent wrote it)', () => {
     const cls = classifyCommit(
       commit({ authorLogin: 'a-person', message: 'feat\n\nCo-Authored-By: Claude <x>' }),

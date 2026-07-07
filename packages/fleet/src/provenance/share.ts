@@ -47,10 +47,16 @@ export interface ProvenanceShare {
   readonly byAgent: readonly AgentProvenance[];
 }
 
-/** True when an ISO timestamp falls in `[since, until)`. Null timestamps are out. */
+/**
+ * True when an ISO timestamp falls in `[since, until)`. Null (or unparseable)
+ * timestamps are out. Compares by instant, not lexically, so records and window
+ * boundaries need not share the same sub-second precision.
+ */
 export function inWindow(iso: string | null, window: ProvenanceWindow): boolean {
   if (!iso) return false;
-  return iso >= window.since && iso < window.until;
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return false;
+  return at >= Date.parse(window.since) && at < Date.parse(window.until);
 }
 
 /** Build a window of `days` ending at `now` (ISO). */

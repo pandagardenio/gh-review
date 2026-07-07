@@ -118,6 +118,12 @@ describe('inWindow / windowEndingAt', () => {
     expect(inWindow(null, WINDOW)).toBe(false);
   });
 
+  it('compares by instant, not lexically, across timestamp precisions', () => {
+    const w = { since: '2026-06-20T00:00:00.000Z', until: '2026-06-20T18:30:45.500Z' };
+    // Seconds-precision record that is numerically inside the ms-precision boundary.
+    expect(inWindow('2026-06-20T18:30:45Z', w)).toBe(true);
+  });
+
   it('builds a window of N days ending at now', () => {
     const w = windowEndingAt('2026-07-01T00:00:00.000Z', 30);
     expect(w.until).toBe('2026-07-01T00:00:00.000Z');
