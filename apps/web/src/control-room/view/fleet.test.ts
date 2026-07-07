@@ -1,11 +1,6 @@
-import {
-  FixtureFleetSource,
-  type FleetRow,
-  type FleetSource,
-  type FleetView,
-  windowEndingAt,
-} from '@triage/fleet';
+import { FixtureFleetSource, type FleetRow, type FleetView, windowEndingAt } from '@triage/fleet';
 import { describe, expect, it, vi } from 'vitest';
+import { stubFleetSource } from '../test-support.js';
 import { buildFleetPage, mountFleet } from './fleet.js';
 
 const NOW_ISO = '2026-06-26T12:20:00.000Z';
@@ -69,9 +64,7 @@ describe('mountFleet', () => {
   it('renders an error state when the fleet cannot be read', async () => {
     const root = document.createElement('div');
     const failing = {
-      source: {
-        listRepos: () => Promise.reject(new Error('rate limited')),
-      } as unknown as FleetSource,
+      source: stubFleetSource({ listRepos: () => Promise.reject(new Error('rate limited')) }),
       window: WINDOW,
       isDemo: false,
     };
@@ -82,9 +75,7 @@ describe('mountFleet', () => {
   it('shows an empty-grid hint when no repos are configured', async () => {
     const root = document.createElement('div');
     const empty = {
-      source: {
-        listRepos: () => Promise.resolve([]),
-      } as unknown as FleetSource,
+      source: stubFleetSource(),
       window: WINDOW,
       isDemo: false,
     };
