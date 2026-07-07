@@ -205,21 +205,32 @@ export function harnessHealthComponents(
   ];
 }
 
+/** The canonical component set — `full` and `missing` are judged against this, not the
+ *  caller's array length, so a short input can never read as complete coverage. */
+const ALL_COMPONENT_KEYS: readonly ComponentKey[] = [
+  'agent-ci',
+  'session-outcome',
+  'review-escalation',
+  'hook-friction',
+];
+
 /** Fold components into a score — the partial-aware composite (`harnessHealth(components)`). */
 export function scoreComponents(components: readonly HealthComponent[]): HarnessHealth {
-  const available = components.filter((c) => c.available && c.health !== null);
-  const missing = components.filter((c) => !c.available).map((c) => c.key);
+  // A usable component is available, has a health, and a finite weight — a broken
+  // (e.g. undefined/NaN) weight must not silently poison the score.
+  const usable = components.filter(
+    (c) => c.available && c.health !== null && Number.isFinite(c.weight),
+  );
+  const usableKeys = new Set(usable.map((c) => c.key));
+  const missing = ALL_COMPONENT_KEYS.filter((key) => !usableKeys.has(key));
+  const totalWeight = usable.reduce((sum, c) => sum + c.weight, 0);
 
-  if (available.length < MIN_COMPONENTS) {
+  if (usable.length < MIN_COMPONENTS || !(totalWeight > 0)) {
     return { score: null, grade: null, status: 'unknown', components, missing };
   }
-  const totalWeight = available.reduce((sum, c) => sum + c.weight, 0);
-  const score =
-    totalWeight > 0
-      ? available.reduce((sum, c) => sum + c.weight * (c.health as number), 0) / totalWeight
-      : null;
-  const status: HarnessStatus = available.length === components.length ? 'full' : 'partial';
-  return { score, grade: score === null ? null : gradeOf(score), status, components, missing };
+  const score = usable.reduce((sum, c) => sum + c.weight * (c.health as number), 0) / totalWeight;
+  const status: HarnessStatus = usableKeys.size === ALL_COMPONENT_KEYS.length ? 'full' : 'partial';
+  return { score, grade: gradeOf(score), status, components, missing };
 }
 
 /** Compute a repo's harness health from its raw data. */
@@ -247,9 +258,11 @@ export interface RepoHarness {
 export function rankByHarnessHealth(entries: readonly RepoHarness[]): RepoHarness[] {
   const tier = (status: HarnessStatus): number =>
     status === 'full' ? 0 : status === 'partial' ? 1 : 2;
+  const scoreOf = (health: HarnessHealth): number =>
+    health.score !== null && Number.isFinite(health.score) ? health.score : -1;
   return [...entries].sort((a, b) => {
     const byTier = tier(a.health.status) - tier(b.health.status);
     if (byTier !== 0) return byTier;
-    return (b.health.score ?? -1) - (a.health.score ?? -1);
+    return scoreOf(b.health) - scoreOf(a.health);
   });
 }

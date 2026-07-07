@@ -62,6 +62,28 @@ describe('scoreComponents', () => {
     expect(result.score).toBeNull();
     expect(result.grade).toBeNull();
   });
+
+  it('judges full/missing against the canonical set, not the passed array length', () => {
+    // Only the two baseline components supplied and available — this is NOT full coverage.
+    const result = scoreComponents([
+      comp('agent-ci', 0.35, 1),
+      comp('review-escalation', 0.2, 0.5),
+    ]);
+    expect(result.status).toBe('partial');
+    expect(result.missing).toEqual(['session-outcome', 'hook-friction']);
+  });
+
+  it('refuses to score (unknown) when a usable weight is non-finite', () => {
+    const result = scoreComponents([
+      comp('agent-ci', Number.NaN, 1),
+      comp('session-outcome', 0.3, 0.5),
+      comp('review-escalation', 0.2, null),
+      comp('hook-friction', 0.15, null),
+    ]);
+    // agent-ci is dropped (NaN weight) → only 1 usable → unknown, not a NaN score.
+    expect(result.status).toBe('unknown');
+    expect(result.score).toBeNull();
+  });
 });
 
 describe('HARNESS_WEIGHTS', () => {
