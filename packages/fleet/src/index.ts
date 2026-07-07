@@ -7,6 +7,22 @@
  * CONTROL-ROOM-CONSTITUTION.md.
  */
 
+export {
+  formatCount,
+  formatDuration,
+  formatPercent,
+  formatScore,
+} from './cockpit/format.js';
+export type {
+  FleetRow,
+  FleetView,
+  RepoReviewPull,
+  RepoSession,
+  RepoView,
+  SessionRow,
+  SessionsView,
+} from './cockpit/view.js';
+export { buildFleetView, buildRepoView, buildSessionsView } from './cockpit/view.js';
 export { FixtureFleetSource } from './fixture-source.js';
 export type { CachedResponse, ConditionalCache } from './github/cache.js';
 export { InMemoryConditionalCache } from './github/cache.js';

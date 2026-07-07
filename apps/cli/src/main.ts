@@ -1,12 +1,14 @@
 /**
- * `triage` CLI entry (BL-026). First face: the ledger emitter. A thin dispatch +
- * arg/stdin parse over `emit` and `installHooks` — all real logic lives in those
- * modules and in `@triage/fleet`. An emit hiccup must never break a session, so
- * every emit path returns exit 0.
+ * `triage` CLI entry (BL-026 emitter, BL-028 cockpit). A thin dispatch + arg/stdin
+ * parse over `emit`/`installHooks` (the ledger-writing face) and `dispatchCockpit`
+ * (the read-only cockpit: `init`, `fleet`, `sessions`, `repo`). All real logic lives
+ * in those modules and in `@triage/fleet`. An emit hiccup must never break a session,
+ * so every emit path returns exit 0.
  */
 
 import { readFileSync } from 'node:fs';
 import type { HookOutcome, SessionStatus } from '@triage/fleet';
+import { COCKPIT_COMMANDS, type CockpitCommand, dispatchCockpit } from './cockpit/run.js';
 import { type EmitKind, emit } from './emit.js';
 import { installHooks } from './install-hooks.js';
 
@@ -41,8 +43,12 @@ function readPayload(): Record<string, unknown> {
 const asString = (value: unknown): string | undefined =>
   typeof value === 'string' ? value : undefined;
 
-function main(argv: readonly string[]): number {
+async function main(argv: readonly string[]): Promise<number> {
   const [command, sub, ...rest] = argv;
+
+  if (command === 'init' || COCKPIT_COMMANDS.includes(command ?? '')) {
+    return dispatchCockpit(command as CockpitCommand | 'init', argv.slice(1));
+  }
 
   if (command === 'install-hooks') {
     const { changed, path } = installHooks(process.cwd());
@@ -89,9 +95,16 @@ function main(argv: readonly string[]): number {
   }
 
   console.error(
-    'usage: triage <emit session-start|session-end|heartbeat|hook-event | install-hooks>',
+    'usage: triage <init | fleet | sessions | repo <owner/repo> | ' +
+      'emit session-start|session-end|heartbeat|hook-event | install-hooks>',
   );
   return 2;
 }
 
-process.exit(main(process.argv.slice(2)));
+main(process.argv.slice(2)).then(
+  (code) => process.exit(code),
+  (error: unknown) => {
+    console.error(`triage: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  },
+);
