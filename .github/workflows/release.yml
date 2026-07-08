@@ -423,7 +423,14 @@ jobs:
       # Consumers pin `uses: …/apps/action@action-vN` — move that floating major
       # alias to this release so they track the latest action-vN.*. Pushed with the
       # default token, which does NOT re-trigger this workflow (no release loop).
+      # HUSKY=0 disables the repo's git hooks: `pnpm install` above installs husky,
+      # so this `git push` would otherwise fire the dev `.husky/pre-push` hook, which
+      # runs `turbo …[origin/main]` and fails in the shallow, detached tag checkout
+      # (no origin/main, no HEAD^). CI already runs the full suite; the hook is a
+      # local-only guard.
       - name: Move floating major alias
+        env:
+          HUSKY: '0'
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#action-v}"
