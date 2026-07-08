@@ -79,17 +79,27 @@ jobs:
           (cd apps/extension/dist/channel && zip -r "$STAGING/triage-channel-v${VERSION}.zip" .)
           ls -l "$STAGING"
 
-      - name: Create GitHub Release
+      # Idempotent: Release Please already created the GitHub Release (notes) when
+      # its release PR merged, so attach the built assets to it. Only create the
+      # release if it's somehow missing (e.g. a re-run before Release Please ran).
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#extension-v}"
-          gh release create "$GITHUB_REF_NAME" \
-            --title "Extension $GITHUB_REF_NAME" \
-            --generate-notes \
-            "dist-release/triage-extension-v${VERSION}.zip" \
+          ASSETS=(
+            "dist-release/triage-extension-v${VERSION}.zip"
             "dist-release/triage-channel-v${VERSION}.zip"
+          )
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${ASSETS[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "Extension $GITHUB_REF_NAME" \
+              --generate-notes \
+              "${ASSETS[@]}"
+          fi
 
   # BL-019: upload the released extension zip to the Chrome Web Store and submit it
   # for review — the store is the extension's real update path (MVP.md §5.3). Gated
@@ -286,16 +296,25 @@ jobs:
           cp apps/bookmarklet/dist/bookmarklet.txt "$STAGING/bookmarklet.txt"
           ls -l "$STAGING"
 
-      - name: Create GitHub Release
+      # Idempotent: attach the built assets to the release Release Please already
+      # created; only create it if it's missing (see the extension train note).
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release create "$GITHUB_REF_NAME" \
-            --title "Bookmarklet $GITHUB_REF_NAME" \
-            --generate-notes \
-            "dist-release/install.html" \
+          ASSETS=(
+            "dist-release/install.html"
             "dist-release/bookmarklet.txt"
+          )
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${ASSETS[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "Bookmarklet $GITHUB_REF_NAME" \
+              --generate-notes \
+              "${ASSETS[@]}"
+          fi
 
   # BL-018: publish the bookmarklet install page to GitHub Pages — one canonical
   # URL always serves the latest build; re-installing from it IS the bookmarklet's
@@ -386,14 +405,20 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Idempotent: the action train ships no assets, so if Release Please already
+      # created the release there is nothing to do; only create it if it's missing.
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release create "$GITHUB_REF_NAME" \
-            --title "Action $GITHUB_REF_NAME" \
-            --generate-notes
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists — nothing to upload."
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "Action $GITHUB_REF_NAME" \
+              --generate-notes
+          fi
 
       # Consumers pin `uses: …/apps/action@action-vN` — move that floating major
       # alias to this release so they track the latest action-vN.*. Pushed with the
